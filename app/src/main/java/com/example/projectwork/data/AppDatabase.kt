@@ -6,10 +6,11 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-@Database(entities = [PlaceEntity::class], version = 1)
+@Database(entities = [PlaceEntity::class, GroceryItem::class], version = 3)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun placeDao(): PlaceDao
+    abstract fun groceryItemDao(): GroceryItemDao
 
     companion object {
         @Volatile
@@ -21,7 +22,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "app_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }

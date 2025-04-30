@@ -19,8 +19,6 @@ data class AddEditPlaceState(
     val name: String = "",
     val address: String = "",
     val category: PlaceCategory = PlaceCategory.SUPERMARKET,
-    val latitude: Double? = null,
-    val longitude: Double? = null,
     val nameError: String? = null,
     val addressError: String? = null,
     val isSaving: Boolean = false
@@ -30,7 +28,6 @@ sealed class AddEditPlaceEvent {
     data class NameChanged(val text: String) : AddEditPlaceEvent()
     data class AddressChanged(val text: String) : AddEditPlaceEvent()
     data class CategoryChanged(val category: PlaceCategory) : AddEditPlaceEvent()
-    data class CoordinatesPicked(val lat: Double, val lng: Double) : AddEditPlaceEvent()
     object SaveClicked : AddEditPlaceEvent()
 }
 
@@ -69,12 +66,6 @@ class AddEditPlaceViewModel(application: Application) : AndroidViewModel(applica
             is AddEditPlaceEvent.CategoryChanged -> {
                 uiState = uiState.copy(category = event.category)
             }
-            is AddEditPlaceEvent.CoordinatesPicked -> {
-                uiState = uiState.copy(
-                    latitude = event.lat,
-                    longitude = event.lng
-                )
-            }
             AddEditPlaceEvent.SaveClicked -> validateAndSave()
         }
     }
@@ -92,13 +83,6 @@ class AddEditPlaceViewModel(application: Application) : AndroidViewModel(applica
             return
         }
 
-        if (currentState.latitude == null || currentState.longitude == null) {
-            viewModelScope.launch {
-                _uiEvent.emit(UiEvent.ShowError("Please select a location"))
-            }
-            return
-        }
-
         viewModelScope.launch {
             uiState = currentState.copy(isSaving = true)
             try {
@@ -106,9 +90,7 @@ class AddEditPlaceViewModel(application: Application) : AndroidViewModel(applica
                     id = currentState.id ?: 0,
                     name = currentState.name.trim(),
                     address = currentState.address.trim(),
-                    category = currentState.category,
-                    latitude = currentState.latitude,
-                    longitude = currentState.longitude
+                    category = currentState.category
                 )
                 repository.upsertPlace(place)
                 _uiEvent.emit(UiEvent.Saved)
@@ -128,9 +110,7 @@ class AddEditPlaceViewModel(application: Application) : AndroidViewModel(applica
                     id = it.id,
                     name = it.name,
                     address = it.address,
-                    category = it.category,
-                    latitude = it.latitude,
-                    longitude = it.longitude
+                    category = it.category
                 )
             }
         }
