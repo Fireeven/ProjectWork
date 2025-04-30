@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 3,
-    "identityHash": "9a160d3c3d7c076571df4d24abacd398",
+    "identityHash": "3d6701e899ff25e0283f25882486088b",
     "entities": [
       {
         "tableName": "places",
@@ -44,7 +44,7 @@
       },
       {
         "tableName": "grocery_items",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `placeId` INTEGER NOT NULL, `name` TEXT NOT NULL, `isChecked` INTEGER NOT NULL, FOREIGN KEY(`placeId`) REFERENCES `places`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `placeId` INTEGER NOT NULL, `name` TEXT NOT NULL, `isChecked` INTEGER NOT NULL, `quantity` INTEGER NOT NULL, FOREIGN KEY(`placeId`) REFERENCES `places`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -67,6 +67,12 @@
           {
             "fieldPath": "isChecked",
             "columnName": "isChecked",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
             "affinity": "INTEGER",
             "notNull": true
           }
@@ -96,7 +102,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9a160d3c3d7c076571df4d24abacd398')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3d6701e899ff25e0283f25882486088b')"
     ]
   }
 }

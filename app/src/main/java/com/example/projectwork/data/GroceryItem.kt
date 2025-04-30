@@ -20,5 +20,6 @@ data class GroceryItem(
     val id: Int = 0,
     val placeId: Int,
     val name: String,
-    val isChecked: Boolean = false
+    val isChecked: Boolean = false,
+    val quantity: Int = 1
 ) 

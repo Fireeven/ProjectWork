@@ -13,6 +13,7 @@ import com.example.projectwork.screens.EditScreen
 import com.example.projectwork.screens.HomeScreen
 import com.example.projectwork.screens.PlaceDetailScreen
 import com.example.projectwork.screens.GroceryListScreen
+import com.example.projectwork.screens.EditGroceryListScreen
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
@@ -28,6 +29,9 @@ sealed class Screen(val route: String) {
     }
     object GroceryList : Screen("groceryList/{placeId}") {
         fun createRoute(placeId: Int) = "groceryList/$placeId"
+    }
+    object EditGroceryList : Screen("editGroceryList/{placeId}") {
+        fun createRoute(placeId: Int) = "editGroceryList/$placeId"
     }
 }
 
@@ -74,23 +78,20 @@ fun NavGraph(navController: NavHostController) {
                 placeId = entry.arguments?.getInt("placeId") ?: return@composable,
                 onNavigateBack = { navController.popBackStack() },
                 onEditClick = { placeId ->
-                    navController.navigate(Screen.AddEditPlace.createRoute(placeId))
-                },
-                onGroceryListClick = { placeId ->
-                    navController.navigate(Screen.GroceryList.createRoute(placeId))
+                    navController.navigate(Screen.EditGroceryList.createRoute(placeId))
                 }
             )
         }
 
         composable(
-            route = Screen.GroceryList.route,
+            route = Screen.EditGroceryList.route,
             arguments = listOf(
                 navArgument("placeId") {
                     type = NavType.IntType
                 }
             )
         ) { entry ->
-            GroceryListScreen(
+            EditGroceryListScreen(
                 placeId = entry.arguments?.getInt("placeId") ?: return@composable,
                 onNavigateBack = { navController.popBackStack() }
             )

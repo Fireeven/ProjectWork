@@ -16,4 +16,7 @@ interface GroceryItemDao {
 
     @Query("UPDATE grocery_items SET isChecked = :isChecked WHERE id = :itemId")
     suspend fun updateItemCheckedStatus(itemId: Int, isChecked: Boolean)
+
+    @Query("UPDATE grocery_items SET quantity = :quantity WHERE id = :itemId")
+    suspend fun updateItemQuantity(itemId: Int, quantity: Int)
 } 
