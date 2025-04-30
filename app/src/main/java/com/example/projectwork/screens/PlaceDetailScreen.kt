@@ -22,6 +22,7 @@ fun PlaceDetailScreen(
     placeId: Int,
     onNavigateBack: () -> Unit,
     onEditClick: (Int) -> Unit,
+    onGroceryListClick: (Int) -> Unit,
     viewModel: PlaceViewModel = viewModel()
 ) {
     val places by viewModel.places.collectAsState()
@@ -39,6 +40,9 @@ fun PlaceDetailScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { place?.let { onGroceryListClick(it.id) } }) {
+                        Icon(Icons.Default.ShoppingCart, contentDescription = "Grocery List")
+                    }
                     IconButton(onClick = { place?.let { onEditClick(it.id) } }) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit")
                     }
@@ -98,12 +102,6 @@ fun PlaceDetails(
                 icon = Icons.Default.LocationOn,
                 title = "Address",
                 value = place.address
-            )
-            
-            DetailCard(
-                icon = Icons.Default.MyLocation,
-                title = "Coordinates",
-                value = "Lat: ${place.latitude}\nLng: ${place.longitude}"
             )
         }
     }

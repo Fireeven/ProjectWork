@@ -12,6 +12,7 @@ import com.example.projectwork.screens.DetailScreen
 import com.example.projectwork.screens.EditScreen
 import com.example.projectwork.screens.HomeScreen
 import com.example.projectwork.screens.PlaceDetailScreen
+import com.example.projectwork.screens.GroceryListScreen
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
@@ -24,6 +25,9 @@ sealed class Screen(val route: String) {
     }
     object PlaceDetail : Screen("placeDetail/{placeId}") {
         fun createRoute(placeId: Int) = "placeDetail/$placeId"
+    }
+    object GroceryList : Screen("groceryList/{placeId}") {
+        fun createRoute(placeId: Int) = "groceryList/$placeId"
     }
 }
 
@@ -46,14 +50,14 @@ fun NavGraph(navController: NavHostController) {
             route = Screen.AddEditPlace.route,
             arguments = listOf(
                 navArgument("placeId") {
-                    type = NavType.IntType
+                    type = NavType.StringType
                     nullable = true
                     defaultValue = null
                 }
             )
         ) { entry ->
             AddEditPlaceScreen(
-                placeId = entry.arguments?.getInt("placeId"),
+                placeId = entry.arguments?.getString("placeId")?.toIntOrNull(),
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -71,7 +75,24 @@ fun NavGraph(navController: NavHostController) {
                 onNavigateBack = { navController.popBackStack() },
                 onEditClick = { placeId ->
                     navController.navigate(Screen.AddEditPlace.createRoute(placeId))
+                },
+                onGroceryListClick = { placeId ->
+                    navController.navigate(Screen.GroceryList.createRoute(placeId))
                 }
+            )
+        }
+
+        composable(
+            route = Screen.GroceryList.route,
+            arguments = listOf(
+                navArgument("placeId") {
+                    type = NavType.IntType
+                }
+            )
+        ) { entry ->
+            GroceryListScreen(
+                placeId = entry.arguments?.getInt("placeId") ?: return@composable,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

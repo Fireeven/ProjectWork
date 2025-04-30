@@ -38,7 +38,7 @@ fun HomeScreen(
             LargeTopAppBar(
                 title = {
                     Text(
-                        "CurSense",
+                        "Welcome to your list",
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold
                         )
