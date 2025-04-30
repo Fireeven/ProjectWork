@@ -30,7 +30,5 @@ data class PlaceEntity(
     val id: Int = 0,
     val name: String,
     val address: String,
-    val category: PlaceCategory,
-    val latitude: Double?,
-    val longitude: Double?
+    val category: PlaceCategory
 ) 
