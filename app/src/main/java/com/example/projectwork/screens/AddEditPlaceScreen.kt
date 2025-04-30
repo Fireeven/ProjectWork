@@ -162,26 +162,6 @@ fun AddEditPlaceScreen(
                 )
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedTextField(
-                    value = state.latitude?.toString() ?: "",
-                    onValueChange = {},
-                    label = { Text("Latitude") },
-                    readOnly = true,
-                    modifier = Modifier.weight(1f)
-                )
-                OutlinedTextField(
-                    value = state.longitude?.toString() ?: "",
-                    onValueChange = {},
-                    label = { Text("Longitude") },
-                    readOnly = true,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
             Button(
                 onClick = { viewModel.onEvent(AddEditPlaceEvent.SaveClicked) },
                 modifier = Modifier.fillMaxWidth(),
