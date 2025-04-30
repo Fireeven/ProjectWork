@@ -14,9 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.projectwork.data.GroceryItem
-import com.example.projectwork.viewmodel.GroceryListEvent
 import com.example.projectwork.viewmodel.GroceryListViewModel
 import com.example.projectwork.viewmodel.GroceryListUiEvent
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,7 +25,7 @@ fun GroceryListScreen(
     onNavigateBack: () -> Unit,
     viewModel: GroceryListViewModel = viewModel()
 ) {
-    val state = viewModel.uiState
+    val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(placeId) {
@@ -33,7 +33,7 @@ fun GroceryListScreen(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.uiEvent.collect { event ->
+        viewModel.events.collectLatest { event ->
             when (event) {
                 is GroceryListUiEvent.ShowError -> {
                     snackbarHostState.showSnackbar(
@@ -41,6 +41,7 @@ fun GroceryListScreen(
                         duration = SnackbarDuration.Short
                     )
                 }
+                else -> {}
             }
         }
     }
@@ -62,40 +63,67 @@ fun GroceryListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(16.dp)
         ) {
+            // Add new item section
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                var newItemText by remember { mutableStateOf("") }
+                
                 OutlinedTextField(
-                    value = state.newItemName,
-                    onValueChange = { viewModel.onEvent(GroceryListEvent.NewItemNameChanged(it)) },
-                    label = { Text("New Item") },
+                    value = newItemText,
+                    onValueChange = { text -> 
+                        newItemText = text
+                        viewModel.onEvent(GroceryListUiEvent.OnNewItemNameChanged(text))
+                    },
+                    label = { Text("Add new item") },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
+
                 IconButton(
-                    onClick = { viewModel.onEvent(GroceryListEvent.AddItemClicked) },
-                    enabled = state.newItemName.isNotBlank()
+                    onClick = { 
+                        if (newItemText.isNotBlank()) {
+                            viewModel.onEvent(GroceryListUiEvent.OnAddItem(newItemText))
+                            newItemText = ""
+                        }
+                    }
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Item")
+                    Icon(Icons.Default.Add, contentDescription = "Add item")
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Loading indicator
+            if (uiState.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+
+            // Grocery items list
             LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(state.items) { item ->
-                    GroceryItemCard(
+                items(
+                    items = uiState.items,
+                    key = { it.id }
+                ) { item ->
+                    GroceryItemRow(
                         item = item,
                         onCheckedChange = { isChecked ->
-                            viewModel.onEvent(GroceryListEvent.ItemCheckedChanged(item.id, isChecked))
+                            viewModel.onEvent(GroceryListUiEvent.OnItemCheckedChanged(item.id, isChecked))
                         },
                         onDelete = {
-                            viewModel.onEvent(GroceryListEvent.DeleteItemClicked(item))
+                            viewModel.onEvent(GroceryListUiEvent.OnDeleteItem(item.id))
+                        },
+                        onQuantityChange = { newQuantity ->
+                            viewModel.onEvent(GroceryListUiEvent.OnQuantityChanged(item.id, newQuantity))
                         }
                     )
                 }
@@ -105,34 +133,65 @@ fun GroceryListScreen(
 }
 
 @Composable
-fun GroceryItemCard(
+fun GroceryItemRow(
     item: GroceryItem,
     onCheckedChange: (Boolean) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onQuantityChange: (Int) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(
                 checked = item.isChecked,
                 onCheckedChange = onCheckedChange
             )
+            
+            Spacer(modifier = Modifier.width(8.dp))
+            
             Text(
                 text = item.name,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge
             )
+            
+            // Quantity controls
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                IconButton(
+                    onClick = { onQuantityChange(item.quantity - 1) },
+                    enabled = item.quantity > 1
+                ) {
+                    Text("-")
+                }
+                
+                Text(
+                    text = item.quantity.toString(),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                
+                IconButton(
+                    onClick = { onQuantityChange(item.quantity + 1) }
+                ) {
+                    Text("+")
+                }
+            }
+            
+            Spacer(modifier = Modifier.width(8.dp))
+            
             IconButton(onClick = onDelete) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "Delete",
+                    contentDescription = "Delete item",
                     tint = MaterialTheme.colorScheme.error
                 )
             }

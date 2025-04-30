@@ -8,16 +8,25 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.projectwork.data.AppDatabase
 import com.example.projectwork.data.GroceryItem
+import com.example.projectwork.data.GroceryItemDao
+import com.example.projectwork.data.PlaceDao
+import com.example.projectwork.data.PlaceEntity
 import com.example.projectwork.repository.GroceryItemRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.update
 
-data class GroceryListState(
+data class GroceryListUiState(
     val items: List<GroceryItem> = emptyList(),
     val newItemName: String = "",
-    val isSaving: Boolean = false
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val place: PlaceEntity? = null
 )
 
 sealed class GroceryListEvent {
@@ -29,68 +38,115 @@ sealed class GroceryListEvent {
 
 sealed class GroceryListUiEvent {
     data class ShowError(val message: String) : GroceryListUiEvent()
+    data class OnItemCheckedChanged(val itemId: Int, val isChecked: Boolean) : GroceryListUiEvent()
+    data class OnNewItemNameChanged(val name: String) : GroceryListUiEvent()
+    data class OnAddItem(val name: String, val quantity: Int = 1) : GroceryListUiEvent()
+    data class OnDeleteItem(val itemId: Int) : GroceryListUiEvent()
+    data class OnQuantityChanged(val itemId: Int, val newQuantity: Int) : GroceryListUiEvent()
 }
 
 class GroceryListViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository: GroceryItemRepository
-    var uiState by mutableStateOf(GroceryListState())
-        private set
+    private val database = AppDatabase.getDatabase(application)
+    private val groceryItemDao: GroceryItemDao = database.groceryItemDao()
+    private val placeDao: PlaceDao = database.placeDao()
+    private var placeId: Int = 0
 
-    private val _uiEvent = MutableSharedFlow<GroceryListUiEvent>()
-    val uiEvent = _uiEvent.asSharedFlow()
+    private val _uiState = MutableStateFlow(GroceryListUiState())
+    val uiState: StateFlow<GroceryListUiState> = _uiState.asStateFlow()
+
+    private val _events = MutableSharedFlow<GroceryListUiEvent>()
+    val events = _events.asSharedFlow()
 
     init {
-        val database = AppDatabase.getDatabase(application)
-        repository = GroceryItemRepository(database.groceryItemDao())
+        loadData()
     }
 
     fun loadItems(placeId: Int) {
+        this.placeId = placeId
+        loadData()
+    }
+
+    private fun loadData() {
         viewModelScope.launch {
-            repository.getItemsForPlace(placeId).collect { items ->
-                uiState = uiState.copy(items = items)
+            try {
+                _uiState.update { currentState -> 
+                    currentState.copy(isLoading = true, error = null)
+                }
+                val place = placeDao.getById(placeId)
+                groceryItemDao.getItemsForPlace(placeId).collect { itemsList ->
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            place = place,
+                            items = itemsList,
+                            isLoading = false
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.update { currentState -> 
+                    currentState.copy(error = e.message, isLoading = false)
+                }
+                _events.emit(GroceryListUiEvent.ShowError(e.message ?: "Unknown error occurred"))
             }
         }
     }
 
-    fun onEvent(event: GroceryListEvent) {
+    fun onEvent(event: GroceryListUiEvent) {
         when (event) {
-            is GroceryListEvent.NewItemNameChanged -> {
-                uiState = uiState.copy(newItemName = event.text)
-            }
-            is GroceryListEvent.ItemCheckedChanged -> {
+            is GroceryListUiEvent.OnItemCheckedChanged -> {
                 viewModelScope.launch {
-                    repository.updateItemCheckedStatus(event.itemId, event.isChecked)
+                    try {
+                        groceryItemDao.updateItemCheckedStatus(event.itemId, event.isChecked)
+                    } catch (e: Exception) {
+                        _events.emit(GroceryListUiEvent.ShowError(e.message ?: "Failed to update item status"))
+                    }
                 }
             }
-            GroceryListEvent.AddItemClicked -> addItem()
-            is GroceryListEvent.DeleteItemClicked -> deleteItem(event.item)
-        }
-    }
-
-    private fun addItem() {
-        val currentState = uiState
-        if (currentState.newItemName.isBlank()) return
-
-        viewModelScope.launch {
-            try {
-                val item = GroceryItem(
-                    name = currentState.newItemName.trim(),
-                    placeId = currentState.items.firstOrNull()?.placeId ?: return@launch
-                )
-                repository.addItem(item)
-                uiState = currentState.copy(newItemName = "")
-            } catch (e: Exception) {
-                _uiEvent.emit(GroceryListUiEvent.ShowError(e.message ?: "Unknown error occurred"))
+            is GroceryListUiEvent.OnNewItemNameChanged -> {
+                _uiState.update { currentState -> 
+                    currentState.copy(newItemName = event.name)
+                }
             }
-        }
-    }
-
-    private fun deleteItem(item: GroceryItem) {
-        viewModelScope.launch {
-            try {
-                repository.deleteItem(item)
-            } catch (e: Exception) {
-                _uiEvent.emit(GroceryListUiEvent.ShowError(e.message ?: "Unknown error occurred"))
+            is GroceryListUiEvent.OnAddItem -> {
+                if (event.name.isNotBlank()) {
+                    viewModelScope.launch {
+                        try {
+                            val newItem = GroceryItem(
+                                placeId = placeId,
+                                name = event.name.trim(),
+                                quantity = event.quantity
+                            )
+                            groceryItemDao.upsertItem(newItem)
+                        } catch (e: Exception) {
+                            _events.emit(GroceryListUiEvent.ShowError(e.message ?: "Failed to add item"))
+                        }
+                    }
+                }
+            }
+            is GroceryListUiEvent.OnDeleteItem -> {
+                viewModelScope.launch {
+                    try {
+                        val item = _uiState.value.items.find { it.id == event.itemId }
+                        item?.let { groceryItemDao.deleteItem(it) }
+                    } catch (e: Exception) {
+                        _events.emit(GroceryListUiEvent.ShowError(e.message ?: "Failed to delete item"))
+                    }
+                }
+            }
+            is GroceryListUiEvent.OnQuantityChanged -> {
+                viewModelScope.launch {
+                    try {
+                        val validQuantity = maxOf(1, event.newQuantity)
+                        groceryItemDao.updateItemQuantity(event.itemId, validQuantity)
+                    } catch (e: Exception) {
+                        _events.emit(GroceryListUiEvent.ShowError(e.message ?: "Failed to update quantity"))
+                    }
+                }
+            }
+            is GroceryListUiEvent.ShowError -> {
+                viewModelScope.launch {
+                    _events.emit(event)
+                }
             }
         }
     }

@@ -3,7 +3,11 @@ package com.example.projectwork.screens
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -11,10 +15,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.projectwork.data.PlaceEntity
-import com.example.projectwork.viewmodel.PlaceViewModel
+import com.example.projectwork.viewmodel.GroceryListViewModel
+import com.example.projectwork.viewmodel.GroceryListUiEvent
+import com.example.projectwork.ui.components.GroceryItemRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,49 +29,227 @@ fun PlaceDetailScreen(
     placeId: Int,
     onNavigateBack: () -> Unit,
     onEditClick: (Int) -> Unit,
-    onGroceryListClick: (Int) -> Unit,
-    viewModel: PlaceViewModel = viewModel()
+    viewModel: GroceryListViewModel = viewModel()
 ) {
-    val places by viewModel.places.collectAsState()
-    val place = remember(places, placeId) {
-        places.find { it.id == placeId }
+    val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var newItemName by remember { mutableStateOf("") }
+    var newItemQuantity by remember { mutableStateOf("1") }
+
+    LaunchedEffect(placeId) {
+        viewModel.loadItems(placeId)
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is GroceryListUiEvent.ShowError -> {
+                    snackbarHostState.showSnackbar(
+                        message = event.message,
+                        duration = SnackbarDuration.Short
+                    )
+                }
+                else -> {}
+            }
+        }
+    }
+
+    if (showAddDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddDialog = false },
+            title = { Text("Add New Item") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    TextField(
+                        value = newItemName,
+                        onValueChange = { newItemName = it },
+                        label = { Text("Item Name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = {
+                                val current = newItemQuantity.toIntOrNull() ?: 1
+                                if (current > 1) {
+                                    newItemQuantity = (current - 1).toString()
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Default.Remove, contentDescription = "Decrease")
+                        }
+                        TextField(
+                            value = newItemQuantity,
+                            onValueChange = { 
+                                if (it.isEmpty()) {
+                                    newItemQuantity = "1"
+                                } else if (it.all { char -> char.isDigit() }) {
+                                    val number = it.toIntOrNull() ?: 1
+                                    newItemQuantity = maxOf(1, number).toString()
+                                }
+                            },
+                            label = { Text("Quantity") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(
+                            onClick = {
+                                val current = newItemQuantity.toIntOrNull() ?: 1
+                                newItemQuantity = (current + 1).toString()
+                            }
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Increase")
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (newItemName.isNotBlank()) {
+                            viewModel.onEvent(GroceryListUiEvent.OnAddItem(
+                                name = newItemName,
+                                quantity = newItemQuantity.toIntOrNull() ?: 1
+                            ))
+                            newItemName = ""
+                            newItemQuantity = "1"
+                            showAddDialog = false
+                        }
+                    }
+                ) {
+                    Text("Add")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { 
+                        showAddDialog = false
+                        newItemName = ""
+                        newItemQuantity = "1"
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(place?.name ?: "Place Details") },
+                title = { Text(uiState.place?.name ?: "") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    IconButton(onClick = { place?.let { onGroceryListClick(it.id) } }) {
-                        Icon(Icons.Default.ShoppingCart, contentDescription = "Grocery List")
-                    }
-                    IconButton(onClick = { place?.let { onEditClick(it.id) } }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit")
+                    IconButton(onClick = { uiState.place?.let { onEditClick(it.id) } }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit Place Details")
                     }
                 }
             )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showAddDialog = true }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Item")
+            }
         }
     ) { padding ->
-        if (place != null) {
-            PlaceDetails(
-                place = place,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Place not found")
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Category Card
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            Text(
+                                text = "Category",
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                            Text(
+                                text = uiState.place?.category?.name ?: "N/A",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    // Address Card
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            Text(
+                                text = "Address",
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                            Text(
+                                text = uiState.place?.address ?: "N/A",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Grocery List Items
+            items(
+                items = uiState.items,
+                key = { item -> item.id }
+            ) { item ->
+                GroceryItemRow(
+                    item = item,
+                    onCheckedChange = { isChecked ->
+                        viewModel.onEvent(GroceryListUiEvent.OnItemCheckedChanged(item.id, isChecked))
+                    },
+                    onDelete = {
+                        viewModel.onEvent(GroceryListUiEvent.OnDeleteItem(item.id))
+                    },
+                    onQuantityChange = { newQuantity ->
+                        viewModel.onEvent(GroceryListUiEvent.OnQuantityChanged(item.id, newQuantity))
+                    },
+                    showQuantityControls = false,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
             }
         }
     }
