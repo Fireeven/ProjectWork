@@ -1,98 +1,221 @@
 package com.example.projectwork.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import com.example.projectwork.navigation.Screen
-import com.example.projectwork.viewmodel.StoreViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.projectwork.data.PlaceEntity
+import com.example.projectwork.viewmodel.PlaceViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    navController: NavController,
-    viewModel: StoreViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    onAddPlace: () -> Unit,
+    onPlaceClick: (Int) -> Unit,
+    viewModel: PlaceViewModel = viewModel()
 ) {
-    val stores by viewModel.stores.collectAsState()
+    val places by viewModel.places.collectAsState()
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Shopping Lists") },
-                actions = {
-                    IconButton(onClick = { /* TODO: Add new store */ }) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Store")
-                    }
-                }
+            LargeTopAppBar(
+                title = {
+                    Text(
+                        "CurSense",
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                },
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                )
             )
+        },
+        floatingActionButton = {
+            FloatingActionButtonWithAnimation(onClick = onAddPlace)
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            items(stores) { store ->
-                StoreItem(
-                    store = store,
-                    onStoreClick = { viewModel.selectStore(store) },
-                    onEditClick = { navController.navigate(Screen.Edit.createRoute(store.id)) },
-                    onDeleteClick = { viewModel.deleteStore(store) }
-                )
+        if (places.isEmpty()) {
+            EmptyStateAnimation(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                itemsIndexed(places) { index, place ->
+                    PlaceItemWithAnimation(
+                        place = place,
+                        onPlaceClick = onPlaceClick,
+                        onDeleteClick = { viewModel.deletePlace(place) },
+                        index = index
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun StoreItem(
-    store: com.example.projectwork.data.Store,
-    onStoreClick: () -> Unit,
-    onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-            .clickable(onClick = onStoreClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+fun FloatingActionButtonWithAnimation(onClick: () -> Unit) {
+    var clicked by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (clicked) 0.8f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+
+    FloatingActionButton(
+        onClick = {
+            clicked = true
+            onClick()
+        },
+        modifier = Modifier.scale(scale),
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary
     ) {
-        Row(
+        Icon(Icons.Default.Add, contentDescription = "Add Place")
+    }
+
+    LaunchedEffect(clicked) {
+        if (clicked) {
+            kotlinx.coroutines.delay(100)
+            clicked = false
+        }
+    }
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun PlaceItemWithAnimation(
+    place: PlaceEntity,
+    onPlaceClick: (Int) -> Unit,
+    onDeleteClick: () -> Unit,
+    index: Int
+) {
+    var isVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(index * 100L)
+        isVisible = true
+    }
+
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = slideInHorizontally(
+            initialOffsetX = { it * 2 }
+        ) + fadeIn() + expandVertically(),
+        exit = slideOutHorizontally() + fadeOut() + shrinkVertically()
+    ) {
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .clickable { onPlaceClick(place.id) }
+                .animateContentSize(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
-            Column(
-                modifier = Modifier.weight(1f)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = store.name,
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Text(
-                    text = "${store.items.size} items",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = place.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = place.category.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = onDeleteClick) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
-            IconButton(onClick = onEditClick) {
-                Icon(Icons.Default.Edit, contentDescription = "Edit Store")
-            }
-            IconButton(onClick = onDeleteClick) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete Store")
-            }
+        }
+    }
+}
+
+@Composable
+fun EmptyStateAnimation(modifier: Modifier = Modifier) {
+    var isAnimating by remember { mutableStateOf(true) }
+    val infiniteTransition = rememberInfiniteTransition(label = "")
+    
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = ""
+    )
+
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.AddLocation,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(100.dp)
+                    .scale(scale),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "No places yet",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tap + to add one",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 } 
