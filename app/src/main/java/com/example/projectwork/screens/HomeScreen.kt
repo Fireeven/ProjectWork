@@ -26,13 +26,15 @@ import com.example.projectwork.ui.components.NavigationButtons
 import kotlin.math.sin
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.collectAsState
+import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onPlaceClick: (Int) -> Unit,
     onAddPlaceClick: () -> Unit,
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel(),
+    navController: NavController
 ) {
     val places by viewModel.places.collectAsState(initial = emptyList())
     // var selectedPlace by remember { mutableStateOf<PlaceWithItemCount?>(null) }
@@ -81,22 +83,53 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddPlaceClick,
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier
-                    .scale(1f + (sin(rotation * Math.PI / 180) * 0.1f).toFloat())
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.Filled.Add, contentDescription = "Add Place")
+                // Analytics button
+                FloatingActionButton(
+                    onClick = { navController.navigate(Screen.Analytics.route) },
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.BarChart, 
+                        contentDescription = "Analytics"
+                    )
+                }
+                
+                // Recipe button
+                FloatingActionButton(
+                    onClick = { navController.navigate(Screen.Recipe.route) },
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.RestaurantMenu, 
+                        contentDescription = "Find Recipes"
+                    )
+                }
+                
+                // Add place button
+                FloatingActionButton(
+                    onClick = onAddPlaceClick,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add, 
+                        contentDescription = "Add place"
+                    )
+                }
             }
         },
         floatingActionButtonPosition = FabPosition.End
-    ) { padding ->
+    ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 160.dp),
-                contentPadding = padding,
+                contentPadding = paddingValues,
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(16.dp)

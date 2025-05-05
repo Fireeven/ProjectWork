@@ -138,15 +138,15 @@ object OpenAIHelper {
      * @param query The user's recipe query
      * @return OpenAIResponse with recipe information
      */
-    suspend fun getRecipeInfo(query: String): OpenAIResponse {
+    suspend fun getRecipeFromOpenAI(query: String): OpenAIResponse {
         return withContext(Dispatchers.IO) {
             if (client == null) {
                 Log.w(TAG, "HTTP client not initialized, using simulated response")
-                return@withContext createSimulatedResponse(query)
+                return@withContext createSimulatedRecipeResponse(query)
             }
             
             try {
-                Log.d(TAG, "Starting API request for query: $query")
+                Log.d(TAG, "Starting API request for recipe query: $query")
 
                 // Create JSON request for chat completion
                 val jsonRequest = JSONObject().apply {
@@ -154,14 +154,30 @@ object OpenAIHelper {
                     put("messages", JSONArray().apply {
                         put(JSONObject().apply {
                             put("role", "system")
-                            put("content", "You are a helpful cooking assistant. Provide concise recipe details with ingredients and instructions.")
+                            put("content", """
+                                You are a helpful cooking assistant. 
+                                Provide a detailed recipe based on the user's query. 
+                                Format your response with clear sections: 
+                                
+                                # Recipe Title
+                                
+                                ## Ingredients
+                                - List ingredients with quantities and units
+                                - One ingredient per line
+                                
+                                ## Instructions
+                                1. First step
+                                2. Second step
+                                
+                                Be precise with ingredients and steps.
+                            """.trimIndent())
                         })
                         put(JSONObject().apply {
                             put("role", "user")
-                            put("content", query)
+                            put("content", "Give me a recipe for $query")
                         })
                     })
-                    put("max_tokens", 500)
+                    put("max_tokens", 1000)
                     put("temperature", 0.7)
                 }
 
@@ -181,72 +197,30 @@ object OpenAIHelper {
                         val responseBody = response.body?.string()
                         if (responseBody != null) {
                             // Parse JSON response
-                            val jsonResponse = JSONObject(responseBody)
-                            val id = jsonResponse.getString("id")
-                            val created = jsonResponse.getLong("created")
-                            val model = jsonResponse.getString("model")
-                            
-                            // Parse usage
-                            val jsonUsage = jsonResponse.getJSONObject("usage")
-                            val usage = OpenAIUsage(
-                                prompt_tokens = jsonUsage.getInt("prompt_tokens"),
-                                completion_tokens = jsonUsage.getInt("completion_tokens"),
-                                total_tokens = jsonUsage.getInt("total_tokens")
-                            )
-                            
-                            // Parse choices
-                            val jsonChoices = jsonResponse.getJSONArray("choices")
-                            val choices = mutableListOf<OpenAIChoice>()
-                            for (i in 0 until jsonChoices.length()) {
-                                val choice = jsonChoices.getJSONObject(i)
-                                val index = choice.getInt("index")
-                                val finishReason = choice.getString("finish_reason")
-                                
-                                // Parse message
-                                val jsonMessage = choice.getJSONObject("message")
-                                val role = jsonMessage.getString("role")
-                                val content = jsonMessage.getString("content")
-                                
-                                choices.add(
-                                    OpenAIChoice(
-                                        index = index,
-                                        message = OpenAIMessage(role, content),
-                                        finish_reason = finishReason
-                                    )
-                                )
-                            }
-                            
-                            Log.d(TAG, "Successfully received API response")
-                            return@withContext OpenAIResponse(
-                                id = id,
-                                choices = choices,
-                                created = created,
-                                model = model,
-                                usage = usage
-                            )
+                            return@withContext parseOpenAIResponse(responseBody)
                         }
                     }
                     
                     // If we reached here, something went wrong
                     Log.w(TAG, "API request failed: ${response?.message}")
-                    return@withContext createSimulatedResponse(query)
+                    return@withContext createSimulatedRecipeResponse(query)
                     
                 } catch (e: Exception) {
                     Log.e(TAG, "API request failed: ${e.message}", e)
-                    return@withContext createSimulatedResponse(query)
+                    return@withContext createSimulatedRecipeResponse(query)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error setting up API request: ${e.message}", e)
-                return@withContext createSimulatedResponse(query)
+                return@withContext createSimulatedRecipeResponse(query)
             }
         }
     }
 
     /**
-     * Create a simulated response for testing or when API is unavailable
+     * Create a simulated recipe response for testing or when API is unavailable
      */
-    private fun createSimulatedResponse(query: String): OpenAIResponse {
-        Log.d(TAG, "Creating simulated response for query: $query")
+    private fun createSimulatedRecipeResponse(query: String): OpenAIResponse {
+        Log.d(TAG, "Creating simulated recipe response for query: $query")
 
         val lowercaseQuery = query.lowercase()
 
@@ -254,14 +228,12 @@ object OpenAIHelper {
             lowercaseQuery.contains("pasta") || lowercaseQuery.contains("spaghetti") -> """
                 # Spaghetti with Tomato Sauce
 
-                A simple Italian classic that everyone loves.
-
                 ## Ingredients
-                - 1 pound (450g) spaghetti
+                - 1 pound spaghetti
                 - 2 tablespoons olive oil
                 - 1 onion, finely chopped
                 - 3 cloves garlic, minced
-                - 28 oz (800g) canned crushed tomatoes
+                - 28 oz canned crushed tomatoes
                 - 1 teaspoon dried oregano
                 - 1 teaspoon dried basil
                 - Salt and pepper to taste
@@ -280,8 +252,6 @@ object OpenAIHelper {
 
             lowercaseQuery.contains("pizza") -> """
                 # Homemade Pizza
-
-                Make delicious pizza at home with this simple recipe.
 
                 ## Ingredients
                 - 2¼ teaspoons active dry yeast
@@ -307,62 +277,171 @@ object OpenAIHelper {
             """.trimIndent()
 
             lowercaseQuery.contains("chicken") -> """
-                # Simple Baked Chicken
-
-                A versatile and easy chicken recipe that's perfect for weeknight dinners.
+                # Lemon Garlic Roasted Chicken
 
                 ## Ingredients
-                - 4 chicken breasts
-                - 2 tablespoons olive oil
-                - 2 teaspoons paprika
-                - 1 teaspoon garlic powder
-                - 1 teaspoon dried oregano
+                - 1 whole chicken (about 4-5 pounds)
+                - 3 tablespoons olive oil
+                - 4 cloves garlic, minced
+                - 2 lemons
+                - 1 tablespoon fresh rosemary, chopped
+                - 1 tablespoon fresh thyme, chopped
                 - 1 teaspoon salt
-                - ½ teaspoon black pepper
-                - 1 lemon, sliced (optional)
+                - 1/2 teaspoon black pepper
+                - 1 onion, quartered
+                - 2 carrots, chopped
 
                 ## Instructions
-                1. Preheat oven to 375°F (190°C).
-                2. In a small bowl, mix paprika, garlic powder, oregano, salt, and pepper.
-                3. Brush chicken with olive oil and sprinkle with spice mixture.
-                4. Place chicken in a baking dish. Add lemon slices if desired.
-                5. Bake for 25-30 minutes until internal temperature reaches 165°F (74°C).
-                6. Let rest for 5 minutes before serving.
+                1. Preheat oven to 425°F (220°C).
+                2. Pat chicken dry with paper towels.
+                3. In a small bowl, mix olive oil, garlic, zest from 1 lemon, rosemary, thyme, salt, and pepper.
+                4. Cut one lemon into quarters and place inside the chicken cavity along with the onion.
+                5. Rub the olive oil mixture all over the chicken.
+                6. Place the chicken in a roasting pan and scatter chopped carrots around it.
+                7. Roast for 1 hour and 20 minutes, or until juices run clear.
+                8. Let rest for 10-15 minutes before carving.
+                9. Squeeze juice from the remaining lemon over the chicken before serving.
+            """.trimIndent()
+
+            lowercaseQuery.contains("cake") || lowercaseQuery.contains("dessert") -> """
+                # Chocolate Cake
+
+                ## Ingredients
+                - 2 cups all-purpose flour
+                - 2 cups sugar
+                - 3/4 cup unsweetened cocoa powder
+                - 2 teaspoons baking soda
+                - 1 teaspoon baking powder
+                - 1 teaspoon salt
+                - 2 eggs
+                - 1 cup buttermilk
+                - 1/2 cup vegetable oil
+                - 2 teaspoons vanilla extract
+                - 1 cup hot coffee
+
+                ## Instructions
+                1. Preheat oven to 350°F (175°C).
+                2. Grease and flour two 9-inch round cake pans.
+                3. In a large bowl, combine flour, sugar, cocoa, baking soda, baking powder, and salt.
+                4. Add eggs, buttermilk, oil, and vanilla; beat for 2 minutes.
+                5. Stir in hot coffee (batter will be thin).
+                6. Pour batter into prepared pans.
+                7. Bake for 30-35 minutes, or until a toothpick inserted comes out clean.
+                8. Cool in pans for 10 minutes, then remove to wire racks to cool completely.
+                9. Frost with your favorite chocolate frosting.
             """.trimIndent()
 
             else -> """
-                I can help with many recipes! Here are some popular options:
+                # Simple Vegetable Stir Fry
 
-                ## Popular Recipes
-                - Pasta dishes (spaghetti, carbonara, lasagna)
-                - Pizza (homemade dough and various toppings)
-                - Chicken recipes (baked, grilled, or in various sauces)
-                - Soups and stews
-                - Desserts like chocolate cake or apple pie
+                ## Ingredients
+                - 2 tablespoons vegetable oil
+                - 1 onion, sliced
+                - 2 bell peppers, sliced
+                - 2 carrots, julienned
+                - 1 broccoli head, cut into florets
+                - 2 cloves garlic, minced
+                - 1 tablespoon ginger, grated
+                - 1/4 cup soy sauce
+                - 1 tablespoon honey
+                - 1 tablespoon cornstarch
+                - 2 tablespoons water
+                - Sesame seeds for garnish
 
-                Just ask for a specific recipe, and I'll provide detailed ingredients and instructions!
+                ## Instructions
+                1. Heat oil in a large wok or frying pan over high heat.
+                2. Add onion and stir-fry for 1 minute.
+                3. Add bell peppers, carrots, and broccoli. Stir-fry for 3-4 minutes.
+                4. Add garlic and ginger, stir-fry for 30 seconds until fragrant.
+                5. In a small bowl, mix soy sauce, honey, cornstarch, and water.
+                6. Pour sauce over vegetables and stir to coat.
+                7. Cook for 2-3 minutes until sauce thickens and vegetables are tender-crisp.
+                8. Garnish with sesame seeds and serve over rice or noodles.
             """.trimIndent()
         }
 
-        // Create a simulated response
-        val timestamp = System.currentTimeMillis()
+        return createSimulatedResponseWithContent(content)
+    }
+
+    /**
+     * Helper function to create a simulated response with given content
+     */
+    private fun createSimulatedResponseWithContent(content: String): OpenAIResponse {
         return OpenAIResponse(
-            id = "simulated-${timestamp}",
+            id = "simulated-id-${System.currentTimeMillis()}",
             choices = listOf(
                 OpenAIChoice(
                     index = 0,
-                    message = OpenAIMessage("assistant", content),
+                    message = OpenAIMessage(
+                        role = "assistant",
+                        content = content
+                    ),
                     finish_reason = "stop"
                 )
             ),
-            created = timestamp / 1000,
-            model = "simulated-model",
+            created = System.currentTimeMillis() / 1000,
+            model = MODEL,
             usage = OpenAIUsage(
-                prompt_tokens = query.length + 50,
-                completion_tokens = content.length,
-                total_tokens = query.length + content.length + 50
+                prompt_tokens = 100,
+                completion_tokens = content.length / 4,
+                total_tokens = 100 + content.length / 4
             )
         )
+    }
+    
+    /**
+     * Parse OpenAI API response JSON
+     */
+    private fun parseOpenAIResponse(responseBody: String): OpenAIResponse {
+        try {
+            // Parse JSON response
+            val jsonResponse = JSONObject(responseBody)
+            val id = jsonResponse.getString("id")
+            val created = jsonResponse.getLong("created")
+            val model = jsonResponse.getString("model")
+            
+            // Parse usage
+            val jsonUsage = jsonResponse.getJSONObject("usage")
+            val usage = OpenAIUsage(
+                prompt_tokens = jsonUsage.getInt("prompt_tokens"),
+                completion_tokens = jsonUsage.getInt("completion_tokens"),
+                total_tokens = jsonUsage.getInt("total_tokens")
+            )
+            
+            // Parse choices
+            val jsonChoices = jsonResponse.getJSONArray("choices")
+            val choices = mutableListOf<OpenAIChoice>()
+            for (i in 0 until jsonChoices.length()) {
+                val choice = jsonChoices.getJSONObject(i)
+                val index = choice.getInt("index")
+                val finishReason = choice.getString("finish_reason")
+                
+                // Parse message
+                val jsonMessage = choice.getJSONObject("message")
+                val role = jsonMessage.getString("role")
+                val content = jsonMessage.getString("content")
+                
+                choices.add(
+                    OpenAIChoice(
+                        index = index,
+                        message = OpenAIMessage(role, content),
+                        finish_reason = finishReason
+                    )
+                )
+            }
+            
+            Log.d(TAG, "Successfully parsed API response")
+            return OpenAIResponse(
+                id = id,
+                choices = choices,
+                created = created,
+                model = model,
+                usage = usage
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing API response: ${e.message}", e)
+            throw e
+        }
     }
 
     /**

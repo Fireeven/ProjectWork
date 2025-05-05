@@ -15,6 +15,8 @@ import com.example.projectwork.screens.PlaceDetailScreen
 import com.example.projectwork.screens.GroceryListScreen
 import com.example.projectwork.screens.EditGroceryListScreen
 import com.example.projectwork.screens.WelcomeScreen
+import com.example.projectwork.screens.RecipeScreen
+import com.example.projectwork.screens.AnalyticsScreen
 
 sealed class Screen(val route: String) {
     object Welcome : Screen("welcome")
@@ -35,6 +37,8 @@ sealed class Screen(val route: String) {
     object EditGroceryList : Screen("editGroceryList/{placeId}") {
         fun createRoute(placeId: Int) = "editGroceryList/$placeId"
     }
+    object Recipe : Screen("recipe")
+    object Analytics : Screen("analytics")
     object Chat : Screen("chat")
     object Settings : Screen("settings")
 }
@@ -61,7 +65,8 @@ fun AppNavigation(navController: NavHostController) {
                 onAddPlaceClick = { navController.navigate(Screen.AddEditPlace.createRoute()) },
                 onPlaceClick = { placeId -> 
                     navController.navigate(Screen.PlaceDetail.createRoute(placeId))
-                }
+                },
+                navController = navController
             )
         }
 
@@ -128,6 +133,19 @@ fun AppNavigation(navController: NavHostController) {
         ) { entry ->
             EditGroceryListScreen(
                 placeId = entry.arguments?.getInt("placeId") ?: return@composable,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Recipe.route) {
+            RecipeScreen(
+                navController = navController,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Analytics.route) {
+            AnalyticsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

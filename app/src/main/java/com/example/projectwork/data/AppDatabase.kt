@@ -14,7 +14,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         GroceryItem::class,
         Category::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -80,6 +80,15 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_grocery_items_placeId ON grocery_items(placeId)")
             }
         }
+        
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add price, recipeId, and recipeTitle columns to grocery_items table
+                db.execSQL("ALTER TABLE grocery_items ADD COLUMN price REAL NOT NULL DEFAULT 0.0")
+                db.execSQL("ALTER TABLE grocery_items ADD COLUMN recipeId TEXT")
+                db.execSQL("ALTER TABLE grocery_items ADD COLUMN recipeTitle TEXT")
+            }
+        }
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -88,7 +97,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "app_database"
                 )
-                .addMigrations(MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

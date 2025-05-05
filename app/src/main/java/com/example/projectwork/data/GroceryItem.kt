@@ -23,5 +23,8 @@ data class GroceryItem(
     val placeId: Int,
     val name: String,
     val quantity: Int = 1,
-    val isChecked: Boolean = false
+    val isChecked: Boolean = false,
+    val price: Double = 0.0,
+    val recipeId: String? = null,
+    val recipeTitle: String? = null
 ) 
