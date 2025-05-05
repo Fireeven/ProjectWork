@@ -5,30 +5,29 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.projectwork.data.GroceryItem
 import com.example.projectwork.viewmodel.GroceryListViewModel
 import com.example.projectwork.viewmodel.GroceryListUiEvent
+import com.example.projectwork.ui.components.GroceryItemRow
 import com.example.projectwork.ui.components.NavigationButtons
-import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.runtime.collectAsState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GroceryListScreen(
+fun EditGroceryListScreen(
     placeId: Int,
     onNavigateBack: () -> Unit,
     viewModel: GroceryListViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var newItemName by remember { mutableStateOf("") }
     
     // Add state for chatbot dialog
     var showChatDialog by remember { mutableStateOf(false) }
@@ -49,7 +48,7 @@ fun GroceryListScreen(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.events.collectLatest { event ->
+        viewModel.events.collect { event ->
             when (event) {
                 is GroceryListUiEvent.ShowError -> {
                     snackbarHostState.showSnackbar(
@@ -65,7 +64,7 @@ fun GroceryListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Grocery List") },
+                title = { Text("Edit List/Items") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -80,57 +79,45 @@ fun GroceryListScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(16.dp)
             ) {
                 // Add new item section
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    var newItemText by remember { mutableStateOf("") }
-                    
                     OutlinedTextField(
-                        value = newItemText,
-                        onValueChange = { text -> 
-                            newItemText = text
-                            viewModel.onEvent(GroceryListUiEvent.OnNewItemNameChanged(text))
+                        value = newItemName,
+                        onValueChange = { 
+                            newItemName = it
+                            viewModel.onEvent(GroceryListUiEvent.OnNewItemNameChanged(it))
                         },
+                        modifier = Modifier.weight(1f),
                         label = { Text("Add new item") },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    IconButton(
-                        onClick = { 
-                            if (newItemText.isNotBlank()) {
-                                viewModel.onEvent(GroceryListUiEvent.OnAddItem(newItemText))
-                                newItemText = ""
+                        trailingIcon = {
+                            IconButton(
+                                onClick = {
+                                    if (newItemName.isNotBlank()) {
+                                        viewModel.onEvent(GroceryListUiEvent.OnAddItem(newItemName))
+                                        newItemName = ""
+                                    }
+                                }
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Add item")
                             }
                         }
-                    ) {
-                        Icon(Icons.Filled.Add, contentDescription = "Add item")
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Loading indicator
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
                 }
 
-                // Grocery items list
+                // List of items
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(
-                        items = uiState.items,
-                        key = { it.id }
-                    ) { item ->
+                    items(uiState.items) { item ->
                         GroceryItemRow(
                             item = item,
                             onCheckedChange = { isChecked ->
@@ -141,7 +128,8 @@ fun GroceryListScreen(
                             },
                             onQuantityChange = { newQuantity ->
                                 viewModel.onEvent(GroceryListUiEvent.OnQuantityChanged(item.id, newQuantity))
-                            }
+                            },
+                            showQuantityControls = true
                         )
                     }
                 }
@@ -160,73 +148,6 @@ fun GroceryListScreen(
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 16.dp)
             )
-        }
-    }
-}
-
-@Composable
-fun GroceryItemRow(
-    item: GroceryItem,
-    onCheckedChange: (Boolean) -> Unit,
-    onDelete: () -> Unit,
-    onQuantityChange: (Int) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Checkbox(
-                checked = item.isChecked,
-                onCheckedChange = onCheckedChange
-            )
-            
-            Spacer(modifier = Modifier.width(8.dp))
-            
-            Text(
-                text = item.name,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyLarge
-            )
-            
-            // Quantity controls
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                IconButton(
-                    onClick = { onQuantityChange(item.quantity - 1) },
-                    enabled = item.quantity > 1
-                ) {
-                    Text("-")
-                }
-                
-                Text(
-                    text = item.quantity.toString(),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                
-                IconButton(
-                    onClick = { onQuantityChange(item.quantity + 1) }
-                ) {
-                    Text("+")
-                }
-            }
-            
-            Spacer(modifier = Modifier.width(8.dp))
-            
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = "Delete item",
-                    tint = MaterialTheme.colorScheme.error
-                )
-            }
         }
     }
 } 

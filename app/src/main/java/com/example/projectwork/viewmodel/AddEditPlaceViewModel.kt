@@ -7,7 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.projectwork.data.AppDatabase
-import com.example.projectwork.data.PlaceCategory
+import com.example.projectwork.data.Category
 import com.example.projectwork.data.PlaceEntity
 import com.example.projectwork.repository.PlaceRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -18,7 +18,8 @@ data class AddEditPlaceState(
     val id: Int? = null,
     val name: String = "",
     val address: String = "",
-    val category: PlaceCategory = PlaceCategory.SUPERMARKET,
+    val category: Category? = null,
+    val categories: List<Category> = emptyList(),
     val nameError: String? = null,
     val addressError: String? = null,
     val isSaving: Boolean = false
@@ -27,7 +28,7 @@ data class AddEditPlaceState(
 sealed class AddEditPlaceEvent {
     data class NameChanged(val text: String) : AddEditPlaceEvent()
     data class AddressChanged(val text: String) : AddEditPlaceEvent()
-    data class CategoryChanged(val category: PlaceCategory) : AddEditPlaceEvent()
+    data class CategoryChanged(val category: Category) : AddEditPlaceEvent()
     object SaveClicked : AddEditPlaceEvent()
 }
 
@@ -38,6 +39,8 @@ sealed class UiEvent {
 
 class AddEditPlaceViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: PlaceRepository
+    private val database = AppDatabase.getDatabase(application)
+    private val categoryDao = database.categoryDao()
     var uiState by mutableStateOf(AddEditPlaceState())
         private set
 
@@ -45,8 +48,34 @@ class AddEditPlaceViewModel(application: Application) : AndroidViewModel(applica
     val uiEvent = _uiEvent.asSharedFlow()
 
     init {
-        val database = AppDatabase.getDatabase(application)
         repository = PlaceRepository(database.placeDao())
+        loadCategories()
+    }
+
+    private fun loadCategories() {
+        viewModelScope.launch {
+            try {
+                categoryDao.getAll().collect { categories ->
+                    if (categories.isEmpty()) {
+                        // If no categories exist, insert default ones
+                        val defaultCategories = listOf(
+                            Category(name = "Grocery Store"),
+                            Category(name = "Supermarket"),
+                            Category(name = "Convenience Store"),
+                            Category(name = "Pharmacy"),
+                            Category(name = "Hardware Store"),
+                            Category(name = "Other")
+                        )
+                        defaultCategories.forEach { category ->
+                            categoryDao.insert(category)
+                        }
+                    }
+                    uiState = uiState.copy(categories = categories)
+                }
+            } catch (e: Exception) {
+                _uiEvent.emit(UiEvent.ShowError("Failed to load categories: ${e.message}"))
+            }
+        }
     }
 
     fun onEvent(event: AddEditPlaceEvent) {
@@ -90,7 +119,7 @@ class AddEditPlaceViewModel(application: Application) : AndroidViewModel(applica
                     id = currentState.id ?: 0,
                     name = currentState.name.trim(),
                     address = currentState.address.trim(),
-                    category = currentState.category
+                    categoryId = currentState.category?.id
                 )
                 repository.upsertPlace(place)
                 _uiEvent.emit(UiEvent.Saved)
@@ -106,11 +135,14 @@ class AddEditPlaceViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             val place = repository.getPlaceById(id)
             place?.let {
+                val category = it.categoryId?.let { categoryId -> 
+                    categoryDao.getById(categoryId)
+                }
                 uiState = uiState.copy(
                     id = it.id,
                     name = it.name,
-                    address = it.address,
-                    category = it.category
+                    address = it.address ?: "",
+                    category = category
                 )
             }
         }

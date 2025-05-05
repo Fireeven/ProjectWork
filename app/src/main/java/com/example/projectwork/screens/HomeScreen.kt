@@ -1,221 +1,264 @@
 package com.example.projectwork.screens
 
-import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.projectwork.data.PlaceEntity
-import com.example.projectwork.viewmodel.PlaceViewModel
+import com.example.projectwork.data.PlaceWithItemCount
+import com.example.projectwork.viewmodel.HomeViewModel
+import com.example.projectwork.ui.components.NavigationButtons
+import kotlin.math.sin
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.collectAsState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onAddPlace: () -> Unit,
     onPlaceClick: (Int) -> Unit,
-    viewModel: PlaceViewModel = viewModel()
+    onAddPlaceClick: () -> Unit,
+    viewModel: HomeViewModel = viewModel()
 ) {
-    val places by viewModel.places.collectAsState()
+    val places by viewModel.places.collectAsState(initial = emptyList())
+    // var selectedPlace by remember { mutableStateOf<PlaceWithItemCount?>(null) }
+    
+    // Add state for chatbot dialog
+    var showChatDialog by remember { mutableStateOf(false) }
+    val chatDialogState = remember { mutableStateOf(false) }
+    
+    // Update the wrapped state when our local state changes
+    LaunchedEffect(showChatDialog) {
+        chatDialogState.value = showChatDialog
+    }
+    
+    // And vice versa
+    LaunchedEffect(chatDialogState.value) {
+        showChatDialog = chatDialogState.value
+    }
+
+    // Continuous rotation animation
+    val infiniteTransition = rememberInfiniteTransition(label = "infinite")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(20000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rotation"
+    )
 
     Scaffold(
         topBar = {
             LargeTopAppBar(
                 title = {
                     Text(
-                        "Welcome to your list",
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.Bold
-                        )
+                        "My Places",
+                        modifier = Modifier.graphicsLayer {
+                            rotationX = sin(rotation * Math.PI / 180).toFloat() * 10f
+                        }
                     )
                 },
                 colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
         },
         floatingActionButton = {
-            FloatingActionButtonWithAnimation(onClick = onAddPlace)
-        }
-    ) { padding ->
-        if (places.isEmpty()) {
-            EmptyStateAnimation(
+            FloatingActionButton(
+                onClick = onAddPlaceClick,
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .scale(1f + (sin(rotation * Math.PI / 180) * 0.1f).toFloat())
             ) {
-                itemsIndexed(places) { index, place ->
-                    PlaceItemWithAnimation(
-                        place = place,
-                        onPlaceClick = onPlaceClick,
-                        onDeleteClick = { viewModel.deletePlace(place) },
-                        index = index
-                    )
-                }
+                Icon(Icons.Filled.Add, contentDescription = "Add Place")
             }
-        }
-    }
-}
-
-@Composable
-fun FloatingActionButtonWithAnimation(onClick: () -> Unit) {
-    var clicked by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (clicked) 0.8f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        )
-    )
-
-    FloatingActionButton(
-        onClick = {
-            clicked = true
-            onClick()
         },
-        modifier = Modifier.scale(scale),
-        containerColor = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary
-    ) {
-        Icon(Icons.Default.Add, contentDescription = "Add Place")
-    }
-
-    LaunchedEffect(clicked) {
-        if (clicked) {
-            kotlinx.coroutines.delay(100)
-            clicked = false
-        }
-    }
-}
-
-@OptIn(ExperimentalAnimationApi::class)
-@Composable
-fun PlaceItemWithAnimation(
-    place: PlaceEntity,
-    onPlaceClick: (Int) -> Unit,
-    onDeleteClick: () -> Unit,
-    index: Int
-) {
-    var isVisible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(index * 100L)
-        isVisible = true
-    }
-
-    AnimatedVisibility(
-        visible = isVisible,
-        enter = slideInHorizontally(
-            initialOffsetX = { it * 2 }
-        ) + fadeIn() + expandVertically(),
-        exit = slideOutHorizontally() + fadeOut() + shrinkVertically()
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onPlaceClick(place.id) }
-                .animateContentSize(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        floatingActionButtonPosition = FabPosition.End
+    ) { padding ->
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 160.dp),
+                contentPadding = padding,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.padding(16.dp)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = place.name,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = place.category.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                items(places, key = { it.id }) { place ->
+                    PlaceCard(
+                        place = place,
+                        onClick = { onPlaceClick(place.id) },
+                        rotation = rotation
                     )
                 }
-                IconButton(onClick = onDeleteClick) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error
+            }
+            
+            // Add the navigation buttons - no back button needed on home screen
+            NavigationButtons(
+                onBackClick = { /* Not used on home screen */ },
+                showChatDialog = chatDialogState,
+                showBackButton = false,
+                showWelcomeButton = false,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+            )
+        }
+    }
+    
+    // Chat dialog
+    if (showChatDialog) {
+        Dialog(onDismissRequest = { showChatDialog = false }) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .fillMaxHeight(0.6f),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 8.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        "Recipe Chatbot",
+                        style = MaterialTheme.typography.headlineMedium
                     )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(
+                        "Ask me about recipes and I'll help you create a grocery list!",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
+                    )
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    Button(onClick = { showChatDialog = false }) {
+                        Text("Close")
+                    }
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EmptyStateAnimation(modifier: Modifier = Modifier) {
-    var isAnimating by remember { mutableStateOf(true) }
-    val infiniteTransition = rememberInfiniteTransition(label = "")
+private fun PlaceCard(
+    place: PlaceWithItemCount,
+    onClick: () -> Unit,
+    rotation: Float,
+    modifier: Modifier = Modifier
+) {
+    // var isHovered by remember { mutableStateOf(false) }
     
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000),
-            repeatMode = RepeatMode.Reverse
+    Card(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .graphicsLayer {
+                rotationY = sin(rotation * Math.PI / 180).toFloat() * 5f
+                rotationX = sin(rotation * Math.PI / 180 + place.id + 90).toFloat() * 5f
+                cameraDistance = 12f * density
+            },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
         ),
-        label = ""
-    )
-
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp,
+            pressedElevation = 8.dp,
+            hoveredElevation = 10.dp
+        )
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
+            // Category icon with rotation
             Icon(
-                imageVector = Icons.Default.AddLocation,
+                imageVector = Icons.Default.Place,
                 contentDescription = null,
                 modifier = Modifier
-                    .size(100.dp)
-                    .scale(scale),
-                tint = MaterialTheme.colorScheme.primary
+                    .align(Alignment.TopEnd)
+                    .size(24.dp)
+                    .rotate(rotation + place.id)
+                    .graphicsLayer {
+                        alpha = 0.6f
+                    },
+                tint = MaterialTheme.colorScheme.onSecondaryContainer
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "No places yet",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Tap + to add one",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+
+            // Place name and details
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .graphicsLayer {
+                        translationY = sin(rotation * Math.PI / 180 + place.id).toFloat() * 8f
+                    }
+            ) {
+                Text(
+                    text = place.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = place.category ?: "Uncategorized",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                )
+                if (!place.address.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = place.address,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f)
+                    )
+                }
+            }
+
+            // Items count badge
+            Surface(
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .graphicsLayer {
+                        rotationZ = sin(rotation * Math.PI / 180 + place.id).toFloat() * 15f
+                    }
+            ) {
+                Text(
+                    text = "${place.itemCount} items",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
         }
     }
 } 
