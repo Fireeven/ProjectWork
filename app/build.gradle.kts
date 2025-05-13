@@ -81,15 +81,21 @@ dependencies {
     // Maps and Location
     implementation(libs.maps.compose)
     implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
 
     // Animations and Graphics
     implementation(libs.lottie.compose)
     implementation(libs.charts)
+    implementation(libs.compose.ui.util)
 
     // ML Kit for receipt scanning
     implementation(libs.ml.kit.text.recognition)
     implementation(libs.tensorflow.lite)
     implementation(libs.tensorflow.lite.support)
+    implementation(libs.camerax.core)
+    implementation(libs.camerax.lifecycle)
+    implementation(libs.camerax.view)
+    implementation(libs.camerax.extensions)
 
     // Testing dependencies
     testImplementation(libs.junit)
