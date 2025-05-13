@@ -58,9 +58,12 @@ android {
 }
 
 dependencies {
+    // Core dependencies
     implementation(libs.core.ktx)
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.activity.compose)
+    
+    // Compose dependencies
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)
@@ -74,6 +77,19 @@ dependencies {
     implementation(libs.room.runtime)
     ksp(libs.room.compiler)
     implementation(libs.room.ktx)
+
+    // Maps and Location
+    implementation(libs.maps.compose)
+    implementation(libs.play.services.maps)
+
+    // Animations and Graphics
+    implementation(libs.lottie.compose)
+    implementation(libs.charts)
+
+    // ML Kit for receipt scanning
+    implementation(libs.ml.kit.text.recognition)
+    implementation(libs.tensorflow.lite)
+    implementation(libs.tensorflow.lite.support)
 
     // Testing dependencies
     testImplementation(libs.junit)
