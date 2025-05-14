@@ -21,8 +21,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.projectwork.data.PlaceEntity
 import com.example.projectwork.viewmodel.GroceryListViewModel
 import com.example.projectwork.viewmodel.GroceryListUiEvent
-import com.example.projectwork.screens.GroceryItemRow
-
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,9 +37,19 @@ fun PlaceDetailScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var newItemName by remember { mutableStateOf("") }
     var newItemQuantity by remember { mutableStateOf("1") }
+    var isRefreshing by remember { mutableStateOf(false) }
+    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing)
 
     LaunchedEffect(placeId) {
         viewModel.loadItems(placeId)
+    }
+
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            viewModel.loadItems(placeId)
+            kotlinx.coroutines.delay(1000)
+            isRefreshing = false
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -67,7 +77,7 @@ fun PlaceDetailScreen(
                         .padding(vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    TextField(
+                    OutlinedTextField(
                         value = newItemName,
                         onValueChange = { newItemName = it },
                         label = { Text("Item Name") },
@@ -89,7 +99,7 @@ fun PlaceDetailScreen(
                         ) {
                             Icon(Icons.Default.Remove, contentDescription = "Decrease")
                         }
-                        TextField(
+                        OutlinedTextField(
                             value = newItemQuantity,
                             onValueChange = { 
                                 if (it.isEmpty()) {
@@ -148,8 +158,22 @@ fun PlaceDetailScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(uiState.place?.name ?: "") },
+            LargeTopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            uiState.place?.name ?: "",
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                        Text(
+                            uiState.place?.category?.name ?: "",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -159,188 +183,120 @@ fun PlaceDetailScreen(
                     IconButton(onClick = { uiState.place?.let { onEditClick(it.id) } }) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit Place Details")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true }
+            ExtendedFloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Item")
+                Spacer(Modifier.width(8.dp))
+                Text("Add Item")
             }
         }
     ) { padding ->
-        LazyColumn(
+        SwipeRefresh(
+            state = swipeRefreshState,
+            onRefresh = { isRefreshing = true },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(padding)
         ) {
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // Category Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    CircularProgressIndicator()
+                }
+            } else if (uiState.items.isEmpty()) {
+                EmptyListPlaceholder(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp)
+                ) {
+                    items(
+                        items = uiState.items,
+                        key = { item -> item.id }
+                    ) { item ->
+                        GroceryItemRow(
+                            item = item,
+                            onCheckedChange = { isChecked ->
+                                viewModel.onEvent(GroceryListUiEvent.OnItemCheckedChanged(item.id, isChecked))
+                            },
+                            onDelete = {
+                                viewModel.onEvent(GroceryListUiEvent.OnDeleteItem(item.id))
+                            },
+                            onQuantityChange = { newQuantity ->
+                                viewModel.onEvent(GroceryListUiEvent.OnQuantityChanged(item.id, newQuantity))
+                            },
+                            showQuantityControls = true,
+                            modifier = Modifier.animateItemPlacement()
                         )
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp),
-                            horizontalAlignment = Alignment.Start
-                        ) {
-                            Text(
-                                text = "Category",
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                            Text(
-                                text = uiState.place?.category?.name ?: "N/A",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-
-                    // Address Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp),
-                            horizontalAlignment = Alignment.Start
-                        ) {
-                            Text(
-                                text = "Address",
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                            Text(
-                                text = uiState.place?.address ?: "N/A",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
                     }
                 }
             }
-
-            // Grocery List Items
-            items(
-                items = uiState.items,
-                key = { item -> item.id }
-            ) { item ->
-                GroceryItemRow(
-                    item = item,
-                    onCheckedChange = { isChecked ->
-                        viewModel.onEvent(GroceryListUiEvent.OnItemCheckedChanged(item.id, isChecked))
-                    },
-                    onDelete = {
-                        viewModel.onEvent(GroceryListUiEvent.OnDeleteItem(item.id))
-                    },
-                    onQuantityChange = { newQuantity ->
-                        viewModel.onEvent(GroceryListUiEvent.OnQuantityChanged(item.id, newQuantity))
-                    },
-                    showQuantityControls = false,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            }
         }
     }
 }
 
 @Composable
-fun PlaceDetails(
-    place: PlaceEntity,
-    modifier: Modifier = Modifier
-) {
-    var isVisible by remember { mutableStateOf(false) }
+fun EmptyListPlaceholder(modifier: Modifier = Modifier) {
+    var isAnimating by remember { mutableStateOf(true) }
+    val infiniteTransition = rememberInfiniteTransition(label = "")
     
-    LaunchedEffect(Unit) {
-        isVisible = true
-    }
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = ""
+    )
 
-    AnimatedVisibility(
-        visible = isVisible,
-        enter = fadeIn() + slideInVertically(),
-        modifier = modifier
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Column(
+        Icon(
+            imageVector = Icons.Default.ShoppingCart,
+            contentDescription = null,
             modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            DetailCard(
-                icon = Icons.Default.Category,
-                title = "Category",
-                value = place.category.name
-            )
-            
-            DetailCard(
-                icon = Icons.Default.LocationOn,
-                title = "Address",
-                value = place.address
-            )
-        }
+                .size(120.dp)
+                .scale(scale),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = "No items yet",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Add items to your shopping list",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
-
-@Composable
-fun DetailCard(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    var scale by remember { mutableStateOf(0.8f) }
-    
-    LaunchedEffect(Unit) {
-        animate(0.8f, 1f, animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        )) { value, _ -> scale = value }
-    }
-
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .scale(scale)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-} 

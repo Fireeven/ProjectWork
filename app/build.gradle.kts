@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.material.icons.extended)
+    implementation(libs.accompanist.swiperefresh)
 
     // Room dependencies
     implementation(libs.room.runtime)
