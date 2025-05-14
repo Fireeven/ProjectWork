@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -23,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.projectwork.data.PlaceEntity
 import com.example.projectwork.viewmodel.PlaceViewModel
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,17 +33,34 @@ fun HomeScreen(
     viewModel: PlaceViewModel = viewModel()
 ) {
     val places by viewModel.places.collectAsState()
+    var isRefreshing by remember { mutableStateOf(false) }
+    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing)
+
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            // Simulate refresh
+            kotlinx.coroutines.delay(1000)
+            isRefreshing = false
+        }
+    }
 
     Scaffold(
         topBar = {
             LargeTopAppBar(
                 title = {
-                    Text(
-                        "Welcome to your list",
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.Bold
+                    Column {
+                        Text(
+                            "My Places",
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            )
                         )
-                    )
+                        Text(
+                            "Manage your shopping locations",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.largeTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -54,27 +72,38 @@ fun HomeScreen(
             FloatingActionButtonWithAnimation(onClick = onAddPlace)
         }
     ) { padding ->
-        if (places.isEmpty()) {
-            EmptyStateAnimation(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                itemsIndexed(places) { index, place ->
-                    PlaceItemWithAnimation(
-                        place = place,
-                        onPlaceClick = onPlaceClick,
-                        onDeleteClick = { viewModel.deletePlace(place) },
-                        index = index
-                    )
+        SwipeRefresh(
+            state = swipeRefreshState,
+            onRefresh = { isRefreshing = true },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            if (places.isEmpty()) {
+                EmptyStateAnimation(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp)
+                ) {
+                    itemsIndexed(
+                        items = places,
+                        key = { _, place -> place.id }
+                    ) { index, place ->
+                        PlaceItemWithAnimation(
+                            place = place,
+                            onPlaceClick = onPlaceClick,
+                            onDeleteClick = { viewModel.deletePlace(place) },
+                            index = index
+                        )
+                    }
                 }
             }
         }
@@ -99,9 +128,17 @@ fun FloatingActionButtonWithAnimation(onClick: () -> Unit) {
         },
         modifier = Modifier.scale(scale),
         containerColor = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Icon(Icons.Default.Add, contentDescription = "Add Place")
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Add Place")
+            Text("Add Place")
+        }
     }
 
     LaunchedEffect(clicked) {
@@ -121,6 +158,7 @@ fun PlaceItemWithAnimation(
     index: Int
 ) {
     var isVisible by remember { mutableStateOf(false) }
+    var isDeleting by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(index * 100L)
@@ -128,7 +166,7 @@ fun PlaceItemWithAnimation(
     }
 
     AnimatedVisibility(
-        visible = isVisible,
+        visible = isVisible && !isDeleting,
         enter = slideInHorizontally(
             initialOffsetX = { it * 2 }
         ) + fadeIn() + expandVertically(),
@@ -139,7 +177,8 @@ fun PlaceItemWithAnimation(
                 .fillMaxWidth()
                 .clickable { onPlaceClick(place.id) }
                 .animateContentSize(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            shape = RoundedCornerShape(16.dp)
         ) {
             Row(
                 modifier = Modifier
@@ -155,13 +194,24 @@ fun PlaceItemWithAnimation(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = place.category.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CategoryChip(category = place.category.name)
+                        Text(
+                            text = place.address,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-                IconButton(onClick = onDeleteClick) {
+                IconButton(
+                    onClick = {
+                        isDeleting = true
+                        onDeleteClick()
+                    }
+                ) {
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = "Delete",
@@ -170,6 +220,21 @@ fun PlaceItemWithAnimation(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun CategoryChip(category: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text(
+            text = category,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     }
 }
 
@@ -200,11 +265,11 @@ fun EmptyStateAnimation(modifier: Modifier = Modifier) {
                 imageVector = Icons.Default.AddLocation,
                 contentDescription = null,
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(120.dp)
                     .scale(scale),
                 tint = MaterialTheme.colorScheme.primary
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
                 text = "No places yet",
                 style = MaterialTheme.typography.headlineMedium,
@@ -212,10 +277,22 @@ fun EmptyStateAnimation(modifier: Modifier = Modifier) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Tap + to add one",
+                text = "Add your first shopping location",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Spacer(modifier = Modifier.height(32.dp))
+            Button(
+                onClick = { isAnimating = !isAnimating },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Add Place")
+            }
         }
     }
-} 
+}
