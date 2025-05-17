@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.projectwork.screens.*
 
+// Defines all navigation destinations (screens) with their route patterns
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Home : Screen("home")
@@ -35,6 +36,7 @@ fun NavGraph(navController: NavHostController) {
         navController = navController,
         startDestination = Screen.Login.route
     ) {
+        // Login screen navigates to Home on success
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
@@ -45,6 +47,7 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
+        // Home screen with callbacks to add a new place or view existing one
         composable(Screen.Home.route) {
             HomeScreen(
                 onAddPlace = { navController.navigate(Screen.AddEditPlace.createRoute()) },
@@ -54,6 +57,7 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
+        // Add/edit place screen with optional placeId argument
         composable(
             route = Screen.AddEditPlace.route,
             arguments = listOf(

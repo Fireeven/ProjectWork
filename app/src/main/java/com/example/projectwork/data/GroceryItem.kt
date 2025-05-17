@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 
+// Declare a Room Entity representing a table named "grocery_items" in the local database
 @Entity(
     tableName = "grocery_items",
     foreignKeys = [

@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.update
 
+// UI state data class for the Grocery List screen
 data class GroceryListUiState(
     val items: List<GroceryItem> = emptyList(),
     val newItemName: String = "",
@@ -45,6 +46,7 @@ sealed class GroceryListUiEvent {
     data class OnQuantityChanged(val itemId: Int, val newQuantity: Int) : GroceryListUiEvent()
 }
 
+// ViewModel for managing the grocery list screen's state and logic
 class GroceryListViewModel(application: Application) : AndroidViewModel(application) {
     private val database = AppDatabase.getDatabase(application)
     private val groceryItemDao: GroceryItemDao = database.groceryItemDao()
@@ -66,6 +68,7 @@ class GroceryListViewModel(application: Application) : AndroidViewModel(applicat
         loadData()
     }
 
+    // Loads place and its grocery items from the database
     private fun loadData() {
         viewModelScope.launch {
             try {
@@ -91,6 +94,7 @@ class GroceryListViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    // Responds to UI-triggered events such as item changes, additions, deletions
     fun onEvent(event: GroceryListUiEvent) {
         when (event) {
             is GroceryListUiEvent.OnItemCheckedChanged -> {

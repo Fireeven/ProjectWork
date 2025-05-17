@@ -36,6 +36,7 @@ sealed class UiEvent {
     data class ShowError(val message: String) : UiEvent()
 }
 
+// ViewModel for the Add/Edit Place screen
 class AddEditPlaceViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: PlaceRepository
     var uiState by mutableStateOf(AddEditPlaceState())
@@ -49,6 +50,7 @@ class AddEditPlaceViewModel(application: Application) : AndroidViewModel(applica
         repository = PlaceRepository(database.placeDao())
     }
 
+    // Handles UI events like text input changes or save button click
     fun onEvent(event: AddEditPlaceEvent) {
         when (event) {
             is AddEditPlaceEvent.NameChanged -> {
@@ -70,6 +72,7 @@ class AddEditPlaceViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
+    // Validates input and saves or updates the place in the database
     private fun validateAndSave() {
         val currentState = uiState
 

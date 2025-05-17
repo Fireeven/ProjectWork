@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 
+// Enum class representing different categories a place can belong to
 enum class PlaceCategory {
     SUPERMARKET,
     DRUGSTORE,
