@@ -7,7 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.projectwork.data.AppDatabase
-import com.example.projectwork.data.PlaceCategory
+import com.example.projectwork.data.Category
 import com.example.projectwork.data.PlaceEntity
 import com.example.projectwork.repository.PlaceRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -18,7 +18,7 @@ data class AddEditPlaceState(
     val id: Int? = null,
     val name: String = "",
     val address: String = "",
-    val category: PlaceCategory = PlaceCategory.SUPERMARKET,
+    val categoryId: Int = 1,
     val nameError: String? = null,
     val addressError: String? = null,
     val isSaving: Boolean = false
@@ -27,7 +27,7 @@ data class AddEditPlaceState(
 sealed class AddEditPlaceEvent {
     data class NameChanged(val text: String) : AddEditPlaceEvent()
     data class AddressChanged(val text: String) : AddEditPlaceEvent()
-    data class CategoryChanged(val category: PlaceCategory) : AddEditPlaceEvent()
+    data class CategoryChanged(val categoryId: Int) : AddEditPlaceEvent()
     object SaveClicked : AddEditPlaceEvent()
 }
 
@@ -64,7 +64,7 @@ class AddEditPlaceViewModel(application: Application) : AndroidViewModel(applica
                 )
             }
             is AddEditPlaceEvent.CategoryChanged -> {
-                uiState = uiState.copy(category = event.category)
+                uiState = uiState.copy(categoryId = event.categoryId)
             }
             AddEditPlaceEvent.SaveClicked -> validateAndSave()
         }
@@ -90,7 +90,7 @@ class AddEditPlaceViewModel(application: Application) : AndroidViewModel(applica
                     id = currentState.id ?: 0,
                     name = currentState.name.trim(),
                     address = currentState.address.trim(),
-                    category = currentState.category
+                    categoryId = currentState.categoryId
                 )
                 repository.upsertPlace(place)
                 _uiEvent.emit(UiEvent.Saved)
@@ -110,7 +110,7 @@ class AddEditPlaceViewModel(application: Application) : AndroidViewModel(applica
                     id = it.id,
                     name = it.name,
                     address = it.address,
-                    category = it.category
+                    categoryId = it.categoryId
                 )
             }
         }

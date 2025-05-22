@@ -6,22 +6,21 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
-    tableName = "grocery_items",
+    tableName = "places",
     foreignKeys = [
         ForeignKey(
-            entity = PlaceEntity::class,
+            entity = Category::class,
             parentColumns = ["id"],
-            childColumns = ["placeId"],
+            childColumns = ["categoryId"],
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("placeId")]
+    indices = [Index("categoryId")]
 )
-data class GroceryItem(
+data class PlaceEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val name: String,
-    val quantity: Int = 1,
-    val isChecked: Boolean = false,
-    val placeId: Int
+    val address: String,
+    val categoryId: Int
 ) 

@@ -8,11 +8,22 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [PlaceEntity::class, GroceryItem::class], version = 4)
+@Database(
+    entities = [
+        PlaceEntity::class,
+        GroceryItem::class,
+        Category::class,
+        User::class
+    ],
+    version = 1,
+    exportSchema = false
+)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun placeDao(): PlaceDao
     abstract fun groceryItemDao(): GroceryItemDao
+    abstract fun categoryDao(): CategoryDao
+    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile

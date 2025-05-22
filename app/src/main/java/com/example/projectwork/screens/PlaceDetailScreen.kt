@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.projectwork.data.PlaceEntity
+import com.example.projectwork.data.PlaceWithCategory
 import com.example.projectwork.viewmodel.GroceryListViewModel
 import com.example.projectwork.viewmodel.GroceryListUiEvent
 import com.example.projectwork.ui.components.GroceryItemRow
@@ -148,14 +149,14 @@ fun PlaceDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(uiState.place?.name ?: "") },
+                title = { Text(uiState.place?.place?.name ?: "") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    IconButton(onClick = { uiState.place?.let { onEditClick(it.id) } }) {
+                    IconButton(onClick = { uiState.place?.let { onEditClick(it.place.id) } }) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit Place Details")
                     }
                 }
@@ -222,7 +223,7 @@ fun PlaceDetailScreen(
                                 style = MaterialTheme.typography.labelMedium
                             )
                             Text(
-                                text = uiState.place?.address ?: "N/A",
+                                text = uiState.place?.place?.address ?: "N/A",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium
                             )
@@ -247,8 +248,7 @@ fun PlaceDetailScreen(
                     onQuantityChange = { newQuantity ->
                         viewModel.onEvent(GroceryListUiEvent.OnQuantityChanged(item.id, newQuantity))
                     },
-                    showQuantityControls = false,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    showQuantityControls = false
                 )
             }
         }
@@ -257,7 +257,7 @@ fun PlaceDetailScreen(
 
 @Composable
 fun PlaceDetails(
-    place: PlaceEntity,
+    place: PlaceWithCategory,
     modifier: Modifier = Modifier
 ) {
     var isVisible by remember { mutableStateOf(false) }
@@ -286,7 +286,7 @@ fun PlaceDetails(
             DetailCard(
                 icon = Icons.Default.LocationOn,
                 title = "Address",
-                value = place.address
+                value = place.place.address
             )
         }
     }

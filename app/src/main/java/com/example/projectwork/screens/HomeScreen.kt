@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.projectwork.data.PlaceEntity
+import com.example.projectwork.data.PlaceWithCategory
 import com.example.projectwork.viewmodel.PlaceViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -115,7 +116,7 @@ fun FloatingActionButtonWithAnimation(onClick: () -> Unit) {
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun PlaceItemWithAnimation(
-    place: PlaceEntity,
+    place: PlaceWithCategory,
     onPlaceClick: (Int) -> Unit,
     onDeleteClick: () -> Unit,
     index: Int
@@ -137,7 +138,7 @@ fun PlaceItemWithAnimation(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onPlaceClick(place.id) }
+                .clickable { onPlaceClick(place.place.id) }
                 .animateContentSize(),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
@@ -150,7 +151,7 @@ fun PlaceItemWithAnimation(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = place.name,
+                        text = place.place.name,
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )

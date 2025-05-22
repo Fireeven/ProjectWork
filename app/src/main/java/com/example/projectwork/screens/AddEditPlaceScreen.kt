@@ -40,7 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.projectwork.data.PlaceCategory
+import com.example.projectwork.data.Category
 import com.example.projectwork.viewmodel.AddEditPlaceEvent
 import com.example.projectwork.viewmodel.AddEditPlaceViewModel
 import com.example.projectwork.viewmodel.UiEvent
@@ -116,7 +116,7 @@ fun AddEditPlaceScreen(
             )
 
             OutlinedTextField(
-                value = state.category.name,
+                value = state.categoryId.toString(),
                 onValueChange = {},
                 label = { Text("Category") },
                 readOnly = true,
@@ -134,21 +134,27 @@ fun AddEditPlaceScreen(
                     title = { Text("Select Category") },
                     text = {
                         Column {
-                            PlaceCategory.entries.forEach { category ->
+                            // TODO: Replace with actual categories from database
+                            listOf(
+                                Category(id = 1, name = "Supermarket"),
+                                Category(id = 2, name = "Drugstore"),
+                                Category(id = 3, name = "Convenience Store"),
+                                Category(id = 4, name = "Other")
+                            ).forEach { category ->
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 8.dp)
                                         .clickable {
-                                            viewModel.onEvent(AddEditPlaceEvent.CategoryChanged(category))
+                                            viewModel.onEvent(AddEditPlaceEvent.CategoryChanged(category.id))
                                             showCategoryDialog = false
                                         },
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     RadioButton(
-                                        selected = category == state.category,
+                                        selected = category.id == state.categoryId,
                                         onClick = {
-                                            viewModel.onEvent(AddEditPlaceEvent.CategoryChanged(category))
+                                            viewModel.onEvent(AddEditPlaceEvent.CategoryChanged(category.id))
                                             showCategoryDialog = false
                                         }
                                     )

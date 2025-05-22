@@ -11,6 +11,7 @@ import com.example.projectwork.data.GroceryItem
 import com.example.projectwork.data.GroceryItemDao
 import com.example.projectwork.data.PlaceDao
 import com.example.projectwork.data.PlaceEntity
+import com.example.projectwork.data.PlaceWithCategory
 import com.example.projectwork.repository.GroceryItemRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +27,7 @@ data class GroceryListUiState(
     val newItemName: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
-    val place: PlaceEntity? = null
+    val place: PlaceWithCategory? = null
 )
 
 sealed class GroceryListEvent {
@@ -72,7 +73,7 @@ class GroceryListViewModel(application: Application) : AndroidViewModel(applicat
                 _uiState.update { currentState -> 
                     currentState.copy(isLoading = true, error = null)
                 }
-                val place = placeDao.getById(placeId)
+                val place = placeDao.getByIdWithCategory(placeId)
                 groceryItemDao.getItemsForPlace(placeId).collect { itemsList ->
                     _uiState.update { currentState ->
                         currentState.copy(

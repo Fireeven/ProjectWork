@@ -1,7 +1,5 @@
 package com.example.projectwork.data
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 
 enum class PlaceCategory {
@@ -22,13 +20,4 @@ class Converters {
 
     @TypeConverter
     fun toCategory(value: String): PlaceCategory = PlaceCategory.fromString(value)
-}
-
-@Entity(tableName = "places")
-data class PlaceEntity(
-    @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
-    val name: String,
-    val address: String,
-    val category: PlaceCategory
-) 
+} 
