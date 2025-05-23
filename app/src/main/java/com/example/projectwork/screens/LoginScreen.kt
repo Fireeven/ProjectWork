@@ -17,6 +17,8 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.LaunchedEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +39,19 @@ fun LoginScreen(
         iterations = LottieConstants.IterateForever
     )
 
+    // Fix for the login screen from chat
+    LaunchedEffect(isLoading) {
+        if (isLoading) {
+            delay(1500)
+            if (email.isNotEmpty() && password.isNotEmpty()) {
+                onLoginSuccess()
+            } else {
+                showError = true
+                isLoading = false
+            }
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -44,7 +59,6 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Logo animation
         LottieAnimation(
             composition = composition,
             progress = { progress },
@@ -53,7 +67,6 @@ fun LoginScreen(
                 .padding(bottom = 32.dp)
         )
 
-        // Login form
         AnimatedLoginForm(
             email = email,
             onEmailChange = { email = it },
@@ -63,20 +76,12 @@ fun LoginScreen(
             showError = showError,
             onLoginClick = {
                 isLoading = true
-                // Simulate login
-                kotlinx.coroutines.MainScope().launch {
-                    kotlinx.coroutines.delay(1500)
-                    if (email.isNotEmpty() && password.isNotEmpty()) {
-                        onLoginSuccess()
-                    } else {
-                        showError = true
-                        isLoading = false
-                    }
-                }
+                showError = false
             }
         )
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

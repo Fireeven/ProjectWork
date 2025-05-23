@@ -24,6 +24,7 @@ android {
         ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
             arg("room.incremental", "true")
+            arg("room.incremental", "true")
             arg("room.expandProjection", "true")
         }
     }
@@ -58,6 +59,9 @@ android {
 }
 
 dependencies {
+    // Some dependencies from chat
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+
     // Core dependencies
     implementation(libs.core.ktx)
     implementation(libs.lifecycle.runtime.ktx)
