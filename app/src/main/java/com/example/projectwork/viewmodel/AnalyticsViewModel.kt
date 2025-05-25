@@ -62,7 +62,7 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
                 for (place in places) {
                     // Get total spending for the place
                     var placeSpending = 0.0
-                    groceryItemDao.getTotalSpendingForPlace(place.id).collect { spending ->
+                    groceryItemDao.getTotalEstimatedSpendingForPlace(place.id).collect { spending ->
                         placeSpending = spending ?: 0.0
                         
                         placeExpenses.add(

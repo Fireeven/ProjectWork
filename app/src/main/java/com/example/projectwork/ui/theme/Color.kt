@@ -2,24 +2,45 @@ package com.example.projectwork.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Dark theme colors (futuristic night mode)
-val NeonBlue = Color(0xFF4DEEEA)     // Glowing blue for primary actions
-val DeepSpace = Color(0xFF0A1128)    // Deep space background
-val CosmicPurple = Color(0xFF7B2CBF) // Cosmic purple for secondary elements
-val NeonPink = Color(0xFFFF2A6D)     // Vibrant pink for accents
-val NeonGreen = Color(0xFF05FF00)    // Electric green for success states
-val CyberYellow = Color(0xFFFAFF00)  // Cyber yellow for attention/warnings
-val DarkMatter = Color(0xFF121212)   // Dark matter for surfaces
-val StarWhite = Color(0xFFE2E2E2)    // Star white for text
-val GlowingTeal = Color(0xFF05C3DD)  // Teal that appears to glow
+// Modern Minimalistic Color Palette
+val Primary = Color(0xFF2563EB) // Clean blue
+val PrimaryVariant = Color(0xFF1D4ED8) // Darker blue
+val Secondary = Color(0xFF10B981) // Fresh green
+val SecondaryVariant = Color(0xFF059669) // Darker green
 
-// Light theme colors (futuristic day mode)
-val LightBlue = Color(0xFF58B7FF)    // Lighter blue for primary actions in light mode
-val SilverGray = Color(0xFFEAEDEE)   // Silver gray background
-val TechPurple = Color(0xFF9D4EDD)   // Tech purple for secondary elements
-val ElectricPink = Color(0xFFFF60A8) // Electric pink for accents
-val SageGreen = Color(0xFF7AE582)    // Sage green for success states
-val EnergyCyan = Color(0xFF26C5D9)   // Energy cyan for info
-val PaleWhite = Color(0xFFF5F5F5)    // Pale white for surfaces
-val DarkIndigo = Color(0xFF2E294E)   // Dark indigo for text
-val ShimmerSilver = Color(0xFFD1D7E0) // Shimmer silver for borders
+val Background = Color(0xFFFAFAFA) // Very light gray
+val Surface = Color(0xFFFFFFFF) // Pure white
+val SurfaceVariant = Color(0xFFF5F5F5) // Light gray
+
+val OnPrimary = Color(0xFFFFFFFF) // White
+val OnSecondary = Color(0xFFFFFFFF) // White
+val OnBackground = Color(0xFF1F2937) // Dark gray
+val OnSurface = Color(0xFF374151) // Medium gray
+val OnSurfaceVariant = Color(0xFF6B7280) // Light gray
+
+val Error = Color(0xFFEF4444) // Clean red
+val OnError = Color(0xFFFFFFFF) // White
+
+val Success = Color(0xFF10B981) // Green
+val Warning = Color(0xFFF59E0B) // Amber
+val Info = Color(0xFF3B82F6) // Blue
+
+// Dark theme colors
+val DarkPrimary = Color(0xFF60A5FA) // Light blue
+val DarkSecondary = Color(0xFF34D399) // Light green
+val DarkBackground = Color(0xFF111827) // Very dark gray
+val DarkSurface = Color(0xFF1F2937) // Dark gray
+val DarkOnBackground = Color(0xFFF9FAFB) // Very light gray
+val DarkOnSurface = Color(0xFFE5E7EB) // Light gray
+
+// Accent colors for charts and highlights
+val ChartColors = listOf(
+    Color(0xFF3B82F6), // Blue
+    Color(0xFF10B981), // Green
+    Color(0xFFF59E0B), // Amber
+    Color(0xFFEF4444), // Red
+    Color(0xFF8B5CF6), // Purple
+    Color(0xFFEC4899), // Pink
+    Color(0xFF06B6D4), // Cyan
+    Color(0xFF84CC16)  // Lime
+)

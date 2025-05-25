@@ -1,343 +1,588 @@
 package com.example.projectwork.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.ShoppingBag
-import androidx.compose.material.icons.filled.Store
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.projectwork.viewmodel.AnalyticsViewModel
-import com.example.projectwork.viewmodel.PlaceExpense
-import java.util.Locale
+import com.example.projectwork.data.GroceryItem
+import com.example.projectwork.ui.components.NavigationButtons
+import com.example.projectwork.viewmodel.GroceryListViewModel
+import kotlinx.coroutines.delay
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.PI
+import java.text.NumberFormat
+import java.util.*
+
+// Enhanced data classes for analytics
+data class SpendingInsight(
+    val title: String,
+    val description: String,
+    val value: String,
+    val trend: String, // "up", "down", "stable"
+    val icon: androidx.compose.ui.graphics.vector.ImageVector
+)
+
+data class CategorySpending(
+    val category: String,
+    val amount: Double,
+    val percentage: Float,
+    val color: Color,
+    val itemCount: Int
+)
+
+data class MonthlySpending(
+    val month: String,
+    val amount: Double,
+    val itemCount: Int
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalyticsScreen(
-    onNavigateBack: () -> Unit,
-    viewModel: AnalyticsViewModel = viewModel()
+    onBackClick: () -> Unit,
+    groceryViewModel: GroceryListViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    var showCurrencyMenu by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val uiState by groceryViewModel.uiState.collectAsState()
+    val showChatDialog = remember { mutableStateOf(false) }
     
-    val currencyOptions = listOf("USD", "EUR", "GBP", "JPY", "CAD", "AUD")
+    // Animation states
+    var showContent by remember { mutableStateOf(false) }
+    var selectedTimeRange by remember { mutableStateOf("This Month") }
+    var selectedCurrency by remember { mutableStateOf("USD") }
+    var showDetailedView by remember { mutableStateOf(false) }
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Spending Analytics") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.Default.Clear,
-                            contentDescription = "Navigate back"
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.refreshData() }) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh data"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
+    // Launch animation
+    LaunchedEffect(Unit) {
+        delay(300)
+        showContent = true
+    }
+    
+    // Calculate analytics data from available grocery items
+    val groceryItems = uiState.items
+    val purchasedItems = groceryItems.filter { it.isPurchased }
+    val totalSpent = purchasedItems.sumOf { it.actualPrice ?: it.price }
+    val totalItems = purchasedItems.size
+    val averageItemPrice = if (totalItems > 0) totalSpent / totalItems else 0.0
+    
+    // Generate insights
+    val insights = generateSpendingInsights(purchasedItems, totalSpent, totalItems)
+    
+    // Category spending data (mock since we don't have categories in GroceryItem)
+    val categorySpending = calculateCategorySpending(purchasedItems)
+    
+    // Monthly spending data
+    val monthlySpending = calculateMonthlySpending(purchasedItems)
+    
+    // Currency formatter
+    val currencyFormatter = remember(selectedCurrency) {
+        NumberFormat.getCurrencyInstance(Locale.US).apply {
+            currency = Currency.getInstance(selectedCurrency)
         }
-    ) { paddingValues ->
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.primary
-                )
-                
-                Text(
-                    "Loading spending data...",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            } else {
-                // Total spending section
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    ),
-                    elevation = CardDefaults.cardElevation(
-                        defaultElevation = 2.dp
-                    )
+            // Header with enhanced design
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.primary,
+                tonalElevation = 4.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        Column {
                             Text(
-                                "Total Spending",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            
-                            Box {
-                                TextButton(onClick = { showCurrencyMenu = true }) {
-                                    Text(uiState.selectedCurrency)
-                                }
-                                
-                                DropdownMenu(
-                                    expanded = showCurrencyMenu,
-                                    onDismissRequest = { showCurrencyMenu = false }
-                                ) {
-                                    currencyOptions.forEach { currency ->
-                                        DropdownMenuItem(
-                                            text = { Text(currency) },
-                                            onClick = {
-                                                viewModel.changeCurrency(currency)
-                                                showCurrencyMenu = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AttachMoney,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            
-                            Spacer(modifier = Modifier.width(8.dp))
-                            
-                            Text(
-                                uiState.formattedTotalExpense,
-                                style = MaterialTheme.typography.headlineLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Place expense distribution chart
-                if (uiState.placeExpenses.isNotEmpty()) {
-                    Text(
-                        "Spending by Store",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                        textAlign = TextAlign.Start
-                    )
-                    
-                    // Simple pie chart
-                    Box(
-                        modifier = Modifier
-                            .size(200.dp)
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        PieChart(placeExpenses = uiState.placeExpenses)
-                        
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = uiState.placeExpenses.size.toString(),
+                                text = "Analytics",
                                 style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
                             Text(
-                                text = "Stores",
-                                style = MaterialTheme.typography.bodyMedium
+                                text = "Smart spending insights",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                             )
                         }
+                        
+                        // Currency selector
+                        FilterChip(
+                            onClick = { 
+                                selectedCurrency = when(selectedCurrency) {
+                                    "USD" -> "EUR"
+                                    "EUR" -> "GBP"
+                                    "GBP" -> "CAD"
+                                    else -> "USD"
+                                }
+                            },
+                            label = { Text(selectedCurrency) },
+                            selected = true,
+                            leadingIcon = { 
+                                Icon(
+                                    Icons.Default.AttachMoney, 
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                ) 
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        )
                     }
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    // List of place expenses
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
+                    // Time range selector
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(uiState.placeExpenses) { placeExpense ->
-                            PlaceExpenseItem(placeExpense, uiState.selectedCurrency)
-                            
-                            if (placeExpense != uiState.placeExpenses.last()) {
-                                Divider(
-                                    modifier = Modifier.padding(vertical = 8.dp),
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                        items(listOf("This Week", "This Month", "Last 3 Months", "This Year")) { range ->
+                            FilterChip(
+                                onClick = { selectedTimeRange = range },
+                                label = { Text(range) },
+                                selected = selectedTimeRange == range,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                    containerColor = Color.Transparent,
+                                    labelColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
                                 )
+                            )
+                        }
+                    }
+                }
+            }
+            
+            AnimatedVisibility(
+                visible = showContent,
+                enter = fadeIn(animationSpec = tween(600)) + expandVertically(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                ),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 100.dp)
+                ) {
+                    // Summary Cards
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            SummaryCard(
+                                title = "Total Spent",
+                                value = currencyFormatter.format(totalSpent),
+                                icon = Icons.Default.AttachMoney,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f)
+                            )
+                            SummaryCard(
+                                title = "Items Bought",
+                                value = totalItems.toString(),
+                                icon = Icons.Default.ShoppingCart,
+                                color = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                    
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            SummaryCard(
+                                title = "Total Items",
+                                value = groceryItems.size.toString(),
+                                icon = Icons.Default.Store,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.weight(1f)
+                            )
+                            SummaryCard(
+                                title = "Avg. Item Price",
+                                value = currencyFormatter.format(averageItemPrice),
+                                icon = Icons.Default.TrendingUp,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                    
+                    // Smart Insights
+                    if (insights.isNotEmpty()) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                ),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(20.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Lightbulb,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            "Smart Insights",
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    
+                                    insights.forEach { insight ->
+                                        InsightItem(insight = insight)
+                                        if (insight != insights.last()) {
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
-                } else {
-                    // Empty state
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.BarChart,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                        )
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        Text(
-                            "No spending data yet",
-                            style = MaterialTheme.typography.titleMedium,
-                            textAlign = TextAlign.Center
-                        )
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        Text(
-                            "Add prices to your grocery items to see spending analytics",
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    
+                    // Enhanced Pie Chart
+                    if (categorySpending.isNotEmpty()) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(20.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            "Spending by Category",
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        
+                                        IconButton(
+                                            onClick = { showDetailedView = !showDetailedView }
+                                        ) {
+                                            Icon(
+                                                if (showDetailedView) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                                contentDescription = "Toggle detailed view"
+                                            )
+                                        }
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    
+                                    // Enhanced Pie Chart
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(250.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        EnhancedPieChart(
+                                            data = categorySpending,
+                                            modifier = Modifier.size(200.dp)
+                                        )
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    
+                                    // Category Legend
+                                    categorySpending.forEach { category ->
+                                        CategoryLegendItem(
+                                            category = category,
+                                            currencyFormatter = currencyFormatter
+                                        )
+                                    }
+                                    
+                                    // Detailed breakdown
+                                    AnimatedVisibility(visible = showDetailedView) {
+                                        Column {
+                                            Spacer(modifier = Modifier.height(16.dp))
+                                            HorizontalDivider()
+                                            Spacer(modifier = Modifier.height(16.dp))
+                                            
+                                            Text(
+                                                "Detailed Breakdown",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            
+                                            Spacer(modifier = Modifier.height(12.dp))
+                                            
+                                            categorySpending.forEach { category ->
+                                                DetailedCategoryItem(
+                                                    category = category,
+                                                    currencyFormatter = currencyFormatter
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Monthly Trend Chart
+                    if (monthlySpending.isNotEmpty()) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(20.dp)
+                                ) {
+                                    Text(
+                                        "Monthly Spending Trend",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    
+                                    MonthlyTrendChart(
+                                        data = monthlySpending,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(200.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Item Performance
+                    item {
+                        ItemPerformanceCard(
+                            groceryItems = purchasedItems,
+                            currencyFormatter = currencyFormatter
                         )
                     }
                 }
             }
         }
+        
+        // Navigation buttons
+        NavigationButtons(
+            onBackClick = onBackClick,
+            showChatDialog = showChatDialog,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 
 @Composable
-fun PlaceExpenseItem(placeExpense: PlaceExpense, currencyCode: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+private fun SummaryCard(
+    title: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = color.copy(alpha = 0.1f)
+        ),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        // Store icon
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                    CircleShape
-                ),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                imageVector = Icons.Default.Store,
+                imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
+                tint = color,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Composable
+private fun InsightItem(insight: SpendingInsight) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = insight.icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
         
-        Spacer(modifier = Modifier.width(16.dp))
-        
-        // Store info
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = placeExpense.name,
-                style = MaterialTheme.typography.titleMedium
+                text = insight.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
             )
-            
             Text(
-                text = "${placeExpense.itemCount} items",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                text = insight.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
-        
-        // Amount
-        val formatter = java.text.NumberFormat.getCurrencyInstance().apply {
-            currency = java.util.Currency.getInstance(currencyCode)
         }
         
         Text(
-            text = formatter.format(placeExpense.totalExpense),
-            style = MaterialTheme.typography.titleMedium,
+            text = insight.value,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = when (insight.trend) {
+                "up" -> MaterialTheme.colorScheme.error
+                "down" -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+        )
+    }
+}
+
+@Composable
+private fun EnhancedPieChart(
+    data: List<CategorySpending>,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier) {
+        val center = Offset(size.width / 2, size.height / 2)
+        val radius = size.minDimension / 2 * 0.8f
+        var startAngle = -90f
+        
+        data.forEach { category ->
+            val sweepAngle = category.percentage * 360f
+            
+            drawArc(
+                color = category.color,
+                startAngle = startAngle,
+                sweepAngle = sweepAngle,
+                useCenter = true,
+                topLeft = Offset(center.x - radius, center.y - radius),
+                size = Size(radius * 2, radius * 2)
+            )
+            
+            startAngle += sweepAngle
+        }
+        
+        // Draw center circle for donut effect
+        drawCircle(
+            color = Color.White,
+            radius = radius * 0.4f,
+            center = center
+        )
+    }
+}
+
+@Composable
+private fun CategoryLegendItem(
+    category: CategorySpending,
+    currencyFormatter: NumberFormat
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(16.dp)
+                .clip(CircleShape)
+                .background(category.color)
+        )
+        
+        Text(
+            text = category.category,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f)
+        )
+        
+        Text(
+            text = "${(category.percentage * 100).toInt()}%",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        
+        Text(
+            text = currencyFormatter.format(category.amount),
+            style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
@@ -345,64 +590,270 @@ fun PlaceExpenseItem(placeExpense: PlaceExpense, currencyCode: String) {
 }
 
 @Composable
-fun PieChart(placeExpenses: List<PlaceExpense>) {
-    val total = placeExpenses.sumOf { it.totalExpense }
-    
-    // Skip drawing if total is zero
-    if (total <= 0) return
-    
-    // Generate colors for each place
-    val colors = listOf(
-        MaterialTheme.colorScheme.primary,
-        MaterialTheme.colorScheme.secondary,
-        MaterialTheme.colorScheme.tertiary,
-        MaterialTheme.colorScheme.error,
-        MaterialTheme.colorScheme.primaryContainer,
-        MaterialTheme.colorScheme.secondaryContainer,
-        MaterialTheme.colorScheme.tertiaryContainer
-    )
-    
-    Canvas(modifier = Modifier.size(200.dp)) {
-        val canvasWidth = size.width
-        val canvasHeight = size.height
-        val radius = minOf(canvasWidth, canvasHeight) / 2
-        val center = Offset(canvasWidth / 2, canvasHeight / 2)
+private fun DetailedCategoryItem(
+    category: CategorySpending,
+    currencyFormatter: NumberFormat
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = category.color.copy(alpha = 0.1f)
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = category.category,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "${category.itemCount} items",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = currencyFormatter.format(category.amount),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = category.color
+                )
+                Text(
+                    text = "${(category.percentage * 100).toInt()}% of total",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MonthlyTrendChart(
+    data: List<MonthlySpending>,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier) {
+        if (data.isEmpty()) return@Canvas
         
-        var startAngle = 0f
+        val maxAmount = data.maxOfOrNull { it.amount } ?: 0.0
+        val stepX = size.width / (data.size - 1).coerceAtLeast(1)
+        val stepY = size.height / maxAmount.coerceAtLeast(1.0)
         
-        placeExpenses.forEachIndexed { index, expense ->
-            val sweepAngle = (expense.totalExpense / total * 360).toFloat()
-            val colorIndex = index % colors.size
-            
-            // Draw arc
-            drawArc(
-                color = colors[colorIndex],
-                startAngle = startAngle,
-                sweepAngle = sweepAngle,
-                useCenter = true,
-                topLeft = Offset(center.x - radius, center.y - radius),
-                size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2)
+        // Draw grid lines
+        val gridColor = Color.Gray.copy(alpha = 0.3f)
+        for (i in 0..4) {
+            val y = size.height * i / 4
+            drawLine(
+                color = gridColor,
+                start = Offset(0f, y),
+                end = Offset(size.width, y),
+                strokeWidth = 1.dp.toPx()
             )
-            
-            // Draw outline
-            drawArc(
-                color = Color.White,
-                startAngle = startAngle,
-                sweepAngle = sweepAngle,
-                useCenter = true,
-                topLeft = Offset(center.x - radius, center.y - radius),
-                size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2),
-                style = Stroke(width = 2f)
-            )
-            
-            startAngle += sweepAngle
         }
         
-        // Draw inner circle for donut chart
-        drawCircle(
-            color = MaterialTheme.colorScheme.background,
-            radius = radius * 0.6f,
-            center = center
+        // Draw line chart
+        val points = data.mapIndexed { index, spending ->
+            Offset(
+                x = index * stepX,
+                y = size.height - (spending.amount * stepY).toFloat()
+            )
+        }
+        
+        // Draw line
+        for (i in 0 until points.size - 1) {
+            drawLine(
+                color = Color.Blue,
+                start = points[i],
+                end = points[i + 1],
+                strokeWidth = 3.dp.toPx()
+            )
+        }
+        
+        // Draw points
+        points.forEach { point ->
+            drawCircle(
+                color = Color.Blue,
+                radius = 6.dp.toPx(),
+                center = point
+            )
+        }
+    }
+}
+
+@Composable
+private fun ItemPerformanceCard(
+    groceryItems: List<GroceryItem>,
+    currencyFormatter: NumberFormat
+) {
+    val itemData = groceryItems
+        .groupBy { it.name }
+        .map { (name, items) ->
+            Triple(name, items.sumOf { it.actualPrice ?: it.price }, items.size)
+        }
+        .sortedByDescending { it.second }
+        .take(5) // Show top 5 items
+    
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Text(
+                "Top Items by Spending",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            if (itemData.isNotEmpty()) {
+                itemData.forEach { (name, amount, count) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = name,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "$count purchases",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        
+                        Text(
+                            text = currencyFormatter.format(amount),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    
+                    if (name != itemData.last().first) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    }
+                }
+            } else {
+                Text(
+                    "No purchase data available yet",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+// Helper functions
+private fun generateSpendingInsights(
+    items: List<GroceryItem>,
+    totalSpent: Double,
+    totalItems: Int
+): List<SpendingInsight> {
+    val insights = mutableListOf<SpendingInsight>()
+    
+    if (totalItems > 0) {
+        val avgPrice = totalSpent / totalItems
+        insights.add(
+            SpendingInsight(
+                title = "Average Item Cost",
+                description = "Your typical grocery item costs",
+                value = "$${String.format("%.2f", avgPrice)}",
+                trend = "stable",
+                icon = Icons.Default.TrendingUp
+            )
         )
     }
+    
+    val mostExpensiveItem = items.maxByOrNull { it.actualPrice ?: it.price }
+    if (mostExpensiveItem != null) {
+        insights.add(
+            SpendingInsight(
+                title = "Most Expensive Item",
+                description = "Your priciest purchase was ${mostExpensiveItem.name}",
+                value = "$${String.format("%.2f", mostExpensiveItem.actualPrice ?: mostExpensiveItem.price)}",
+                trend = "up",
+                icon = Icons.Default.TrendingUp
+            )
+        )
+    }
+    
+    return insights
+}
+
+private fun calculateCategorySpending(items: List<GroceryItem>): List<CategorySpending> {
+    // Since GroceryItem doesn't have categories, we'll create mock categories based on item names
+    val categoryTotals = items.groupBy { categorizeItem(it.name) }
+        .map { (category, categoryItems) ->
+            val amount = categoryItems.sumOf { it.actualPrice ?: it.price }
+            val itemCount = categoryItems.size
+            Triple(category, amount, itemCount)
+        }
+    
+    val totalAmount = categoryTotals.sumOf { it.second }
+    
+    val colors = listOf(
+        Color(0xFF2563EB), // Blue
+        Color(0xFF10B981), // Green
+        Color(0xFFF59E0B), // Yellow
+        Color(0xFFEF4444), // Red
+        Color(0xFF8B5CF6), // Purple
+        Color(0xFF06B6D4), // Cyan
+        Color(0xFFF97316), // Orange
+        Color(0xFFEC4899)  // Pink
+    )
+    
+    return categoryTotals.mapIndexed { index, (category, amount, itemCount) ->
+        CategorySpending(
+            category = category,
+            amount = amount,
+            percentage = if (totalAmount > 0) (amount / totalAmount).toFloat() else 0f,
+            color = colors[index % colors.size],
+            itemCount = itemCount
+        )
+    }.sortedByDescending { it.amount }
+}
+
+private fun categorizeItem(itemName: String): String {
+    val name = itemName.lowercase()
+    return when {
+        name.contains("milk") || name.contains("cheese") || name.contains("yogurt") -> "Dairy"
+        name.contains("apple") || name.contains("banana") || name.contains("orange") -> "Fruits"
+        name.contains("bread") || name.contains("pasta") || name.contains("rice") -> "Grains"
+        name.contains("chicken") || name.contains("beef") || name.contains("fish") -> "Meat"
+        name.contains("carrot") || name.contains("lettuce") || name.contains("tomato") -> "Vegetables"
+        else -> "Other"
+    }
+}
+
+private fun calculateMonthlySpending(items: List<GroceryItem>): List<MonthlySpending> {
+    // For now, return mock data since we don't have date tracking
+    return listOf(
+        MonthlySpending("Jan", 245.50, 23),
+        MonthlySpending("Feb", 312.75, 28),
+        MonthlySpending("Mar", 189.25, 19),
+        MonthlySpending("Apr", 267.80, 25),
+        MonthlySpending("May", 298.45, 31)
+    )
 } 

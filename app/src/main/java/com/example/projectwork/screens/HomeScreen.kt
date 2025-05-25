@@ -27,6 +27,7 @@ import kotlin.math.sin
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavController
+import com.example.projectwork.navigation.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,15 +84,52 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
+            // Main add place button
+            FloatingActionButton(
+                onClick = onAddPlaceClick,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add, 
+                    contentDescription = "Add place"
+                )
+            }
+        },
+        floatingActionButtonPosition = FabPosition.End
+    ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 160.dp),
+                contentPadding = paddingValues,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .padding(bottom = 80.dp) // Add space for navigation buttons
+            ) {
+                items(places, key = { it.id }) { place ->
+                    PlaceCard(
+                        place = place,
+                        onClick = { onPlaceClick(place.id) },
+                        rotation = rotation
+                    )
+                }
+            }
+            
+            // Secondary action buttons positioned on the left side
             Column(
-                horizontalAlignment = Alignment.End,
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Analytics button
                 FloatingActionButton(
                     onClick = { navController.navigate(Screen.Analytics.route) },
                     containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = MaterialTheme.colorScheme.onSecondary
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.BarChart, 
@@ -103,47 +141,17 @@ fun HomeScreen(
                 FloatingActionButton(
                     onClick = { navController.navigate(Screen.Recipe.route) },
                     containerColor = MaterialTheme.colorScheme.tertiary,
-                    contentColor = MaterialTheme.colorScheme.onTertiary
+                    contentColor = MaterialTheme.colorScheme.onTertiary,
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.RestaurantMenu, 
                         contentDescription = "Find Recipes"
                     )
                 }
-                
-                // Add place button
-                FloatingActionButton(
-                    onClick = onAddPlaceClick,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add, 
-                        contentDescription = "Add place"
-                    )
-                }
-            }
-        },
-        floatingActionButtonPosition = FabPosition.End
-    ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 160.dp),
-                contentPadding = paddingValues,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.padding(16.dp)
-            ) {
-                items(places, key = { it.id }) { place ->
-                    PlaceCard(
-                        place = place,
-                        onClick = { onPlaceClick(place.id) },
-                        rotation = rotation
-                    )
-                }
             }
             
-            // Add the navigation buttons - no back button needed on home screen
+            // Navigation buttons at the bottom
             NavigationButtons(
                 onBackClick = { /* Not used on home screen */ },
                 showChatDialog = chatDialogState,

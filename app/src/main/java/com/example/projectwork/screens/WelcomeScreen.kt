@@ -190,8 +190,8 @@ fun WelcomeScreen(
                     null
                 }
                 
-                if (openAIResponse == null) {
-                    // Handle null response
+                if (openAIResponse == null || openAIResponse.isFailure) {
+                    // Handle null or failed response
                     chatMessages = chatMessages + ChatMessage(
                         "I'm having trouble connecting to the recipe service. Using simulated response instead.", 
                         false
@@ -210,7 +210,7 @@ fun WelcomeScreen(
                     chatMessages = chatMessages + ChatMessage(simulatedResponse, false)
                 } else {
                     // Process the response
-                    val botResponse = openAIResponse.choices[0].message.content
+                    val botResponse = openAIResponse.getOrNull() ?: "No response received"
                     
                     // Add the bot response
                     chatMessages = chatMessages + ChatMessage(botResponse, false)

@@ -68,7 +68,11 @@ fun ApiConnectionTest() {
                             if (testResult?.first == true) {
                                 try {
                                     val response = OpenAIHelper.getRecipeInfo("Give me a very simple pasta recipe")
-                                    testResponse = response.choices.firstOrNull()?.message?.content
+                                    testResponse = if (response.isSuccess) {
+                                        response.getOrNull()
+                                    } else {
+                                        "Error getting recipe: ${response.exceptionOrNull()?.message}"
+                                    }
                                 } catch (e: Exception) {
                                     Log.e("ApiTest", "Error getting recipe: ${e.message}", e)
                                     testResponse = "Error getting recipe: ${e.message}"

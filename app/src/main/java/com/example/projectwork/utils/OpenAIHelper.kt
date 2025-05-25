@@ -42,11 +42,35 @@ data class OpenAIUsage(
     val total_tokens: Int
 )
 
-// Recipe data model
-data class Recipe(
+// Enhanced Recipe data model
+data class SimpleRecipe(
     val name: String,
     val ingredients: List<String>
 )
+
+// Chat message data model
+data class ChatMessage(
+    val role: String, // "user" or "assistant"
+    val content: String,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+// Enhanced chatbot response
+data class ChatbotResponse(
+    val message: String,
+    val suggestedIngredients: List<String> = emptyList(),
+    val suggestedRecipes: List<SimpleRecipe> = emptyList(),
+    val actionType: ChatActionType = ChatActionType.GENERAL_RESPONSE
+)
+
+enum class ChatActionType {
+    GENERAL_RESPONSE,
+    INGREDIENT_SUGGESTION,
+    RECIPE_SUGGESTION,
+    SHOPPING_LIST_CREATION,
+    PRICE_ESTIMATION,
+    NUTRITION_INFO
+}
 
 /**
  * Helper class to interact with OpenAI API
@@ -58,17 +82,12 @@ object OpenAIHelper {
     private const val API_KEY = BuildConfig.OPENAI_API_KEY
 
     // Create OkHttpClient with timeout configuration
-    private val client by lazy {
-        try {
-            OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to create OkHttpClient: ${e.message}", e)
-            null
-        }
+    private val client: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
     }
 
     /**
@@ -78,10 +97,6 @@ object OpenAIHelper {
     suspend fun testAPIConnection(): Pair<Boolean, String> {
         return withContext(Dispatchers.IO) {
             try {
-                if (client == null) {
-                    return@withContext Pair(false, "HTTP client not initialized")
-                }
-
                 // Simple query to test connection
                 val testQuery = "Hello"
                 val systemPrompt = "You are a helpful cooking assistant. Just respond with 'Connection successful'."
@@ -113,12 +128,12 @@ object OpenAIHelper {
 
                 // Execute request
                 try {
-                    val response = client?.newCall(request)?.execute()
-                    if (response?.isSuccessful == true) {
+                    val response = client.newCall(request).execute()
+                    if (response.isSuccessful) {
                         Log.d(TAG, "API connection test successful")
                         return@withContext Pair(true, "Connected to OpenAI API")
                     } else {
-                        val errorMessage = response?.body?.string() ?: "Unknown error"
+                        val errorMessage = response.body?.string() ?: "Unknown error"
                         Log.w(TAG, "API connection test failed: $errorMessage")
                         return@withContext Pair(false, "Failed to connect to OpenAI API: $errorMessage")
                     }
@@ -130,6 +145,185 @@ object OpenAIHelper {
                 Log.e(TAG, "API connection test failed: ${e.message}", e)
                 return@withContext Pair(false, "Failed to set up HTTP client: ${e.message ?: "Unknown error"}")
             }
+        }
+    }
+
+    /**
+     * Enhanced chatbot that can handle various grocery and recipe-related queries
+     */
+    suspend fun getChatbotResponse(
+        userMessage: String,
+        conversationHistory: List<ChatMessage> = emptyList(),
+        existingIngredients: List<String> = emptyList()
+    ): Result<ChatbotResponse> = withContext(Dispatchers.IO) {
+        try {
+            val systemPrompt = createEnhancedSystemPrompt(existingIngredients)
+            val messages = buildConversationMessages(systemPrompt, conversationHistory, userMessage)
+            
+            val requestBody = JSONObject().apply {
+                put("model", MODEL)
+                put("messages", messages)
+                put("max_tokens", 500)
+                put("temperature", 0.7)
+            }
+
+            val request = Request.Builder()
+                .url(API_URL)
+                .addHeader("Authorization", "Bearer $API_KEY")
+                .addHeader("Content-Type", "application/json")
+                .post(requestBody.toString().toRequestBody("application/json".toMediaType()))
+                .build()
+
+            val response = client.newCall(request).execute()
+            
+            if (response.isSuccessful) {
+                val responseBody = response.body?.string()
+                if (responseBody != null) {
+                    val jsonResponse = JSONObject(responseBody)
+                    val choices = jsonResponse.getJSONArray("choices")
+                    if (choices.length() > 0) {
+                        val messageContent = choices.getJSONObject(0)
+                            .getJSONObject("message")
+                            .getString("content")
+                        
+                        val chatbotResponse = parseEnhancedResponse(messageContent, userMessage)
+                        Result.success(chatbotResponse)
+                    } else {
+                        Result.failure(Exception("No response from AI"))
+                    }
+                } else {
+                    Result.failure(Exception("Empty response body"))
+                }
+            } else {
+                val errorBody = response.body?.string() ?: "Unknown error"
+                Log.e(TAG, "API Error: ${response.code} - $errorBody")
+                Result.failure(Exception("API Error: ${response.code}"))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting chatbot response: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get recipe suggestions based on available ingredients
+     */
+    suspend fun getRecipeFromIngredients(ingredients: List<String>): Result<List<SimpleRecipe>> = withContext(Dispatchers.IO) {
+        try {
+            val prompt = """
+                Based on these ingredients: ${ingredients.joinToString(", ")}, 
+                suggest 3 simple recipes I can make. For each recipe, provide:
+                1. Recipe name
+                2. Complete ingredient list (including what I might need to buy)
+                
+                Format your response as JSON:
+                {
+                  "recipes": [
+                    {
+                      "name": "Recipe Name",
+                      "ingredients": ["ingredient1", "ingredient2", ...]
+                    }
+                  ]
+                }
+            """.trimIndent()
+
+            val result = getRecipeInfo(prompt)
+            if (result.isSuccess) {
+                val response = result.getOrNull()
+                if (response != null) {
+                    val recipes = parseRecipeListFromResponse(response)
+                    Result.success(recipes)
+                } else {
+                    Result.failure(Exception("No recipe data received"))
+                }
+            } else {
+                result.map { emptyList<SimpleRecipe>() }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting recipes from ingredients: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get ingredient suggestions for a specific cuisine or dietary preference
+     */
+    suspend fun getIngredientSuggestions(
+        cuisine: String = "",
+        dietaryRestrictions: String = "",
+        mealType: String = ""
+    ): Result<List<String>> = withContext(Dispatchers.IO) {
+        try {
+            val prompt = buildString {
+                append("Suggest 10-15 essential ingredients for ")
+                if (cuisine.isNotEmpty()) append("$cuisine cuisine ")
+                if (mealType.isNotEmpty()) append("$mealType meals ")
+                if (dietaryRestrictions.isNotEmpty()) append("with $dietaryRestrictions dietary restrictions ")
+                append(". Focus on versatile ingredients that can be used in multiple dishes.")
+                append(" Return only a comma-separated list of ingredients.")
+            }
+
+            val result = getRecipeInfo(prompt)
+            if (result.isSuccess) {
+                val response = result.getOrNull()
+                if (response != null) {
+                    val ingredients = response.split(",")
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                    Result.success(ingredients)
+                } else {
+                    Result.failure(Exception("No ingredient suggestions received"))
+                }
+            } else {
+                result.map { emptyList<String>() }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting ingredient suggestions: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get nutritional information for ingredients
+     */
+    suspend fun getNutritionalInfo(ingredients: List<String>): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val prompt = """
+                Provide brief nutritional information for these ingredients: ${ingredients.joinToString(", ")}.
+                Include key nutrients, health benefits, and any dietary considerations.
+                Keep it concise and practical for grocery shopping decisions.
+            """.trimIndent()
+
+            getRecipeInfo(prompt)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting nutritional info: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Estimate prices for ingredients (mock implementation - in real app, integrate with price APIs)
+     */
+    suspend fun estimateIngredientPrices(
+        ingredients: List<String>,
+        location: String = "US"
+    ): Result<Map<String, Double>> = withContext(Dispatchers.IO) {
+        try {
+            // Mock price estimation - in a real app, you'd integrate with grocery APIs
+            val priceEstimates = ingredients.associateWith { ingredient ->
+                when {
+                    ingredient.contains("meat", ignoreCase = true) -> kotlin.random.Random.nextDouble(5.0, 15.0)
+                    ingredient.contains("vegetable", ignoreCase = true) -> kotlin.random.Random.nextDouble(1.0, 4.0)
+                    ingredient.contains("fruit", ignoreCase = true) -> kotlin.random.Random.nextDouble(2.0, 6.0)
+                    ingredient.contains("dairy", ignoreCase = true) -> kotlin.random.Random.nextDouble(2.0, 8.0)
+                    ingredient.contains("grain", ignoreCase = true) -> kotlin.random.Random.nextDouble(1.0, 5.0)
+                    else -> kotlin.random.Random.nextDouble(1.0, 10.0)
+                }
+            }
+            Result.success(priceEstimates)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error estimating prices: ${e.message}", e)
+            Result.failure(e)
         }
     }
 
@@ -191,9 +385,9 @@ object OpenAIHelper {
 
                 // Execute request
                 try {
-                    val response = client?.newCall(request)?.execute()
+                    val response = client.newCall(request).execute()
                     
-                    if (response?.isSuccessful == true) {
+                    if (response.isSuccessful) {
                         val responseBody = response.body?.string()
                         if (responseBody != null) {
                             // Parse JSON response
@@ -202,7 +396,7 @@ object OpenAIHelper {
                     }
                     
                     // If we reached here, something went wrong
-                    Log.w(TAG, "API request failed: ${response?.message}")
+                    Log.w(TAG, "API request failed: ${response.message}")
                     return@withContext createSimulatedRecipeResponse(query)
                     
                 } catch (e: Exception) {
@@ -213,6 +407,59 @@ object OpenAIHelper {
                 Log.e(TAG, "Error setting up API request: ${e.message}", e)
                 return@withContext createSimulatedRecipeResponse(query)
             }
+        }
+    }
+
+    /**
+     * Alias for getRecipeFromOpenAI for backward compatibility
+     */
+    suspend fun getRecipeInfo(prompt: String): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val requestBody = JSONObject().apply {
+                put("model", MODEL)
+                put("messages", JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("role", "user")
+                        put("content", prompt)
+                    })
+                })
+                put("max_tokens", 500)
+                put("temperature", 0.7)
+            }
+
+            val request = Request.Builder()
+                .url(API_URL)
+                .addHeader("Authorization", "Bearer $API_KEY")
+                .addHeader("Content-Type", "application/json")
+                .post(requestBody.toString().toRequestBody("application/json".toMediaType()))
+                .build()
+
+            val response = client.newCall(request).execute()
+            
+            if (response.isSuccessful) {
+                val responseBody = response.body?.string()
+                if (responseBody != null) {
+                    val jsonResponse = JSONObject(responseBody)
+                    val choices = jsonResponse.getJSONArray("choices")
+                    if (choices.length() > 0) {
+                        val content = choices.getJSONObject(0)
+                            .getJSONObject("message")
+                            .getString("content")
+                        Result.success(content)
+                    } else {
+                        Result.failure(Exception("No response from AI"))
+                    }
+                } else {
+                    Result.failure(Exception("Empty response body"))
+                }
+            } else {
+                val errorBody = response.body?.string() ?: "Unknown error"
+                Log.e(TAG, "API Error: ${response.code} - $errorBody")
+                Result.failure(Exception("API Error: ${response.code}"))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error calling OpenAI API: ${e.message}", e)
+            Result.failure(e)
         }
     }
 
@@ -445,26 +692,165 @@ object OpenAIHelper {
     }
 
     /**
-     * Extract ingredient list from response
-     * @param response The full response from AI
-     * @return List of ingredients or null if not found
+     * Extract ingredients from recipe text
      */
-    fun extractIngredients(response: String): List<String>? {
+    fun extractIngredients(recipeText: String): List<String>? {
         try {
-            // Look for ingredients section in the response
-            val ingredientSection = response.split("##").find { section ->
-                section.trim().lowercase().startsWith("ingredients")
+            // Try to extract the ingredients section
+            val ingredientsRegex = """(?i)(?:##?\s*ingredients|\bingredients\s*:)[\s\S]*?(?=##?\s*|\b\w+\s*:|\Z)""".toRegex()
+            val match = ingredientsRegex.find(recipeText)
+            
+            if (match != null) {
+                val ingredientsSection = match.value
+                
+                // Extract individual ingredients (looking for bullet points or numbered list items)
+                val ingredientItemsRegex = """(?:^|\n)\s*(?:[-*•]|\d+\.)\s*(.+)""".toRegex()
+                val ingredients = ingredientItemsRegex.findAll(ingredientsSection)
+                    .map { it.groupValues[1].trim() }
+                    .filter { it.isNotEmpty() }
+                    .toList()
+                
+                return ingredients
             }
-
-            // Extract bullet points if ingredient section found
-            return ingredientSection?.lines()
-                ?.filter { line -> line.trim().startsWith("-") }
-                ?.map { line -> line.substringAfter("-").trim() }
-                ?.filter { it.isNotEmpty() }
-
+            
+            return null
         } catch (e: Exception) {
             Log.e(TAG, "Error extracting ingredients: ${e.message}", e)
             return null
+        }
+    }
+
+    // Helper methods
+    private fun createEnhancedSystemPrompt(existingIngredients: List<String>): String {
+        return """
+            You are a helpful grocery and recipe assistant. You can help users with:
+            1. Recipe suggestions based on ingredients they have
+            2. Ingredient recommendations for specific cuisines or dietary needs
+            3. Creating shopping lists from recipes
+            4. Nutritional information about ingredients
+            5. General cooking and grocery shopping advice
+            
+            Current ingredients the user has: ${existingIngredients.joinToString(", ")}
+            
+            Always be practical, concise, and helpful. When suggesting recipes, consider what ingredients 
+            the user already has. When recommending ingredients, focus on versatile items that can be 
+            used in multiple dishes.
+        """.trimIndent()
+    }
+
+    private fun buildConversationMessages(
+        systemPrompt: String,
+        history: List<ChatMessage>,
+        currentMessage: String
+    ): JSONArray {
+        return JSONArray().apply {
+            // Add system message
+            put(JSONObject().apply {
+                put("role", "system")
+                put("content", systemPrompt)
+            })
+            
+            // Add conversation history (last 5 messages to stay within token limits)
+            history.takeLast(5).forEach { message ->
+                put(JSONObject().apply {
+                    put("role", message.role)
+                    put("content", message.content)
+                })
+            }
+            
+            // Add current user message
+            put(JSONObject().apply {
+                put("role", "user")
+                put("content", currentMessage)
+            })
+        }
+    }
+
+    private fun parseEnhancedResponse(content: String, userMessage: String): ChatbotResponse {
+        // Determine action type based on user message and response content
+        val actionType = when {
+            userMessage.contains("recipe", ignoreCase = true) -> ChatActionType.RECIPE_SUGGESTION
+            userMessage.contains("ingredient", ignoreCase = true) -> ChatActionType.INGREDIENT_SUGGESTION
+            userMessage.contains("nutrition", ignoreCase = true) -> ChatActionType.NUTRITION_INFO
+            userMessage.contains("price", ignoreCase = true) -> ChatActionType.PRICE_ESTIMATION
+            userMessage.contains("shopping", ignoreCase = true) -> ChatActionType.SHOPPING_LIST_CREATION
+            else -> ChatActionType.GENERAL_RESPONSE
+        }
+
+        // Extract ingredients and recipes from response if present
+        val ingredients = extractIngredientsFromText(content)
+        val recipes = extractRecipesFromText(content)
+
+        return ChatbotResponse(
+            message = content,
+            suggestedIngredients = ingredients,
+            suggestedRecipes = recipes,
+            actionType = actionType
+        )
+    }
+
+    private fun extractIngredientsFromText(text: String): List<String> {
+        // Simple extraction - look for common ingredient patterns
+        val ingredientPattern = Regex("""(?:ingredients?|need|buy|get):\s*([^\n]+)""", RegexOption.IGNORE_CASE)
+        val matches = ingredientPattern.findAll(text)
+        
+        return matches.flatMap { match ->
+            match.groupValues[1].split(",", ";", "and")
+                .map { it.trim() }
+                .filter { it.isNotEmpty() && it.length > 2 }
+        }.toList()
+    }
+
+    private fun extractRecipesFromText(text: String): List<SimpleRecipe> {
+        // Simple extraction - look for recipe patterns
+        val recipes = mutableListOf<SimpleRecipe>()
+        val lines = text.split("\n")
+        
+        var currentRecipe: String? = null
+        val currentIngredients = mutableListOf<String>()
+        
+        for (line in lines) {
+            when {
+                line.contains("recipe", ignoreCase = true) && line.contains(":") -> {
+                    // Save previous recipe if exists
+                    if (currentRecipe != null && currentIngredients.isNotEmpty()) {
+                        recipes.add(SimpleRecipe(currentRecipe, currentIngredients.toList()))
+                        currentIngredients.clear()
+                    }
+                    currentRecipe = line.substringAfter(":").trim()
+                }
+                line.trim().startsWith("-") || line.trim().startsWith("•") -> {
+                    currentIngredients.add(line.trim().removePrefix("-").removePrefix("•").trim())
+                }
+            }
+        }
+        
+        // Add last recipe
+        if (currentRecipe != null && currentIngredients.isNotEmpty()) {
+            recipes.add(SimpleRecipe(currentRecipe, currentIngredients.toList()))
+        }
+        
+        return recipes
+    }
+
+    private fun parseRecipeListFromResponse(response: String): List<SimpleRecipe> {
+        return try {
+            val jsonResponse = JSONObject(response)
+            val recipesArray = jsonResponse.getJSONArray("recipes")
+            
+            (0 until recipesArray.length()).map { i ->
+                val recipeObj = recipesArray.getJSONObject(i)
+                val name = recipeObj.getString("name")
+                val ingredientsArray = recipeObj.getJSONArray("ingredients")
+                val ingredients = (0 until ingredientsArray.length()).map { j ->
+                    ingredientsArray.getString(j)
+                }
+                SimpleRecipe(name, ingredients)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing recipe list: ${e.message}", e)
+            // Fallback to text parsing
+            extractRecipesFromText(response)
         }
     }
 }

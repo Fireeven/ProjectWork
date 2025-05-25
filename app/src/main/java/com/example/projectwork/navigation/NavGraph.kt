@@ -139,14 +139,13 @@ fun AppNavigation(navController: NavHostController) {
 
         composable(Screen.Recipe.route) {
             RecipeScreen(
-                navController = navController,
-                onNavigateBack = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() }
             )
         }
 
         composable(Screen.Analytics.route) {
             AnalyticsScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() }
             )
         }
 
