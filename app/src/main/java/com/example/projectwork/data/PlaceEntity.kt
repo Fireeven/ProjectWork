@@ -12,7 +12,7 @@ import androidx.room.PrimaryKey
             entity = Category::class,
             parentColumns = ["id"],
             childColumns = ["categoryId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.SET_NULL
         )
     ],
     indices = [Index("categoryId")]
@@ -21,6 +21,6 @@ data class PlaceEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val name: String,
-    val address: String,
-    val categoryId: Int
+    val address: String? = null,
+    val categoryId: Int? = null
 ) 
