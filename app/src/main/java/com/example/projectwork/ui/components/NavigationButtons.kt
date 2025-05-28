@@ -34,29 +34,32 @@ import com.example.projectwork.utils.ChatActionType
 import com.example.projectwork.utils.ChatMessage
 import com.example.projectwork.utils.OpenAIHelper
 import com.example.projectwork.utils.SimpleRecipe
+import com.example.projectwork.viewmodel.GroceryListViewModel
+import com.example.projectwork.viewmodel.GroceryListUiEvent
+import com.example.projectwork.data.GroceryItem
 import kotlinx.coroutines.launch
 
 /**
  * A navigation bar with multiple buttons in a row
  * 
  * @param onBackClick Callback for when the back button is clicked
- * @param onWelcomeClick Callback for navigating to welcome screen
+ * @param onWelcomeClick Callback for navigating to home screen (renamed for clarity)
  * @param showChatDialog MutableState to control the visibility of the chat dialog
  * @param modifier Optional modifier for customizing the layout
  * @param showBackButton Whether to show the back button (default: true)
- * @param showWelcomeButton Whether to show the welcome button (default: false)
- * @param showChatButton Whether to show the chatbot button (default: true)
+ * @param showWelcomeButton Whether to show the home button (default: true) - renamed for clarity
+ * @param groceryViewModel Optional grocery list view model for recipe integration
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavigationButtons(
-    onBackClick: () -> Unit,
+    onBackClick: () -> Unit = {},
     onWelcomeClick: () -> Unit = {},
     showChatDialog: MutableState<Boolean>,
-    modifier: Modifier = Modifier,
     showBackButton: Boolean = true,
-    showWelcomeButton: Boolean = false,
-    showChatButton: Boolean = true
+    showWelcomeButton: Boolean = true,
+    groceryViewModel: GroceryListViewModel? = null,
+    modifier: Modifier = Modifier
 ) {
     var userMessage by remember { mutableStateOf("") }
     var chatMessages by remember { mutableStateOf(listOf<ChatMessage>()) }
@@ -66,8 +69,105 @@ fun NavigationButtons(
     var selectedCuisine by remember { mutableStateOf("") }
     var selectedDietaryRestriction by remember { mutableStateOf("") }
     
+    // Recipe integration states
+    var showRecipeActionDialog by remember { mutableStateOf(false) }
+    var pendingRecipe by remember { mutableStateOf<SimpleRecipe?>(null) }
+    var availablePlaces by remember { mutableStateOf(listOf<com.example.projectwork.data.PlaceEntity>()) }
+    var selectedPlaceId by remember { mutableStateOf<Int?>(null) }
+    
     val keyboardController = LocalSoftwareKeyboardController.current
     val coroutineScope = rememberCoroutineScope()
+    
+    // Load available places if groceryViewModel is provided
+    LaunchedEffect(groceryViewModel) {
+        groceryViewModel?.let { vm ->
+            vm.getAllPlaces().collect { places ->
+                availablePlaces = places
+                if (selectedPlaceId == null && places.isNotEmpty()) {
+                    selectedPlaceId = places.first().id
+                }
+            }
+        }
+    }
+    
+    // Function to extract recipe from chatbot response
+    fun extractRecipeFromResponse(response: String): SimpleRecipe? {
+        return try {
+            val lines = response.split("\n").map { it.trim() }
+            var recipeName = "Generated Recipe"
+            val ingredients = mutableListOf<String>()
+            val instructions = mutableListOf<String>()
+            
+            var currentSection = ""
+            var stepCounter = 1
+            
+            for (line in lines) {
+                when {
+                    line.startsWith("#") && !line.startsWith("##") -> {
+                        recipeName = line.removePrefix("#").trim()
+                    }
+                    line.contains("ingredients", ignoreCase = true) && line.startsWith("##") -> {
+                        currentSection = "ingredients"
+                    }
+                    line.contains("instructions", ignoreCase = true) && line.startsWith("##") -> {
+                        currentSection = "instructions"
+                    }
+                    line.startsWith("-") || line.startsWith("*") || line.startsWith("•") -> {
+                        when (currentSection) {
+                            "ingredients" -> ingredients.add(line.removePrefix("-").removePrefix("*").removePrefix("•").trim())
+                            "instructions" -> instructions.add("$stepCounter. ${line.removePrefix("-").removePrefix("*").removePrefix("•").trim()}")
+                        }
+                        if (currentSection == "instructions") stepCounter++
+                    }
+                    line.matches(Regex("^\\d+\\..*")) -> {
+                        if (currentSection == "instructions") {
+                            instructions.add(line.trim())
+                        }
+                    }
+                    line.isNotBlank() && currentSection == "ingredients" && !line.startsWith("#") -> {
+                        ingredients.add(line.trim())
+                    }
+                    line.isNotBlank() && currentSection == "instructions" && !line.startsWith("#") -> {
+                        instructions.add("$stepCounter. ${line.trim()}")
+                        stepCounter++
+                    }
+                }
+            }
+            
+            if (ingredients.isNotEmpty()) {
+                SimpleRecipe(
+                    name = recipeName,
+                    ingredients = ingredients,
+                    instructions = if (instructions.isNotEmpty()) instructions else listOf(
+                        "1. Prepare your ingredients",
+                        "2. Follow the recipe steps",
+                        "3. Cook according to requirements",
+                        "4. Serve and enjoy!"
+                    )
+                )
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    // Enhanced function to detect and handle recipes
+    fun detectAndHandleRecipe(response: String) {
+        // Simple recipe detection patterns
+        val hasRecipeKeywords = response.contains("recipe", ignoreCase = true) ||
+                response.contains("ingredients", ignoreCase = true) ||
+                response.contains("instructions", ignoreCase = true) ||
+                response.contains("cook", ignoreCase = true)
+        
+        if (hasRecipeKeywords) {
+            // Try to extract recipe from response
+            val extractedRecipe = extractRecipeFromResponse(response)
+            if (extractedRecipe != null) {
+                pendingRecipe = extractedRecipe
+                showRecipeActionDialog = true
+            }
+        }
+    }
     
     // Enhanced chatbot function
     fun handleEnhancedChat(message: String, actionType: String = "general") {
@@ -83,16 +183,12 @@ fun NavigationButtons(
                     "ingredient_suggestions" -> {
                         val result = OpenAIHelper.getIngredientSuggestions(
                             cuisine = selectedCuisine,
-                            dietaryRestrictions = selectedDietaryRestriction,
-                            mealType = "dinner"
+                            dietaryRestrictions = selectedDietaryRestriction
                         )
                         if (result.isSuccess) {
                             val ingredients = result.getOrNull() ?: emptyList()
                             suggestedIngredients = ingredients
-                            chatMessages = chatMessages + ChatMessage(
-                                "assistant", 
-                                "Here are some essential ingredients for ${if (selectedCuisine.isNotEmpty()) "$selectedCuisine cuisine" else "cooking"}:\n\n${ingredients.joinToString("\n") { "• $it" }}\n\nWould you like me to suggest recipes using these ingredients?"
-                            )
+                            chatMessages = chatMessages + ChatMessage("assistant", "Here are some ingredient suggestions: ${ingredients.joinToString(", ")}")
                         } else {
                             chatMessages = chatMessages + ChatMessage("assistant", "Sorry, I couldn't get ingredient suggestions right now.")
                         }
@@ -102,24 +198,26 @@ fun NavigationButtons(
                         if (result.isSuccess) {
                             val recipes = result.getOrNull() ?: emptyList()
                             suggestedRecipes = recipes
-                            val recipeText = recipes.joinToString("\n\n") { recipe ->
-                                "**${recipe.name}**\nIngredients: ${recipe.ingredients.joinToString(", ")}"
+                            val recipeNames = recipes.map { it.name }
+                            val responseText = "I found these recipes you can make: ${recipeNames.joinToString(", ")}"
+                            chatMessages = chatMessages + ChatMessage("assistant", responseText)
+                            
+                            // Check if any recipe was found and trigger action dialog
+                            if (recipes.isNotEmpty()) {
+                                pendingRecipe = recipes.first()
+                                showRecipeActionDialog = true
                             }
-                            chatMessages = chatMessages + ChatMessage(
-                                "assistant",
-                                "Here are some recipes you can make:\n\n$recipeText\n\nWould you like me to add any of these to your grocery list?"
-                            )
                         } else {
-                            chatMessages = chatMessages + ChatMessage("assistant", "Sorry, I couldn't generate recipes right now.")
+                            chatMessages = chatMessages + ChatMessage("assistant", "Sorry, I couldn't find recipes with those ingredients.")
                         }
                     }
                     "nutrition_info" -> {
-                        val result = OpenAIHelper.getNutritionalInfo(suggestedIngredients.take(5))
+                        val result = OpenAIHelper.getNutritionalInfo(suggestedIngredients)
                         if (result.isSuccess) {
-                            val nutritionInfo = result.getOrNull() ?: "No nutrition information available."
-                            chatMessages = chatMessages + ChatMessage("assistant", nutritionInfo)
+                            val info = result.getOrNull() ?: "No nutritional information available."
+                            chatMessages = chatMessages + ChatMessage("assistant", info)
                         } else {
-                            chatMessages = chatMessages + ChatMessage("assistant", "Sorry, I couldn't get nutrition information right now.")
+                            chatMessages = chatMessages + ChatMessage("assistant", "Sorry, I couldn't get nutritional information right now.")
                         }
                     }
                     else -> {
@@ -139,6 +237,9 @@ fun NavigationButtons(
                             if (response.suggestedRecipes.isNotEmpty()) {
                                 suggestedRecipes = response.suggestedRecipes
                             }
+                            
+                            // Auto-detect recipe in response
+                            detectAndHandleRecipe(response.message)
                         } else {
                             chatMessages = chatMessages + ChatMessage("assistant", "Sorry, I'm having trouble responding right now. Please try again.")
                         }
@@ -153,73 +254,70 @@ fun NavigationButtons(
     }
     
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight(),
-        contentAlignment = Alignment.BottomCenter
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
     ) {
         Row(
-            modifier = if (showBackButton || showWelcomeButton) {
-                modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 8.dp)
-            } else {
-                modifier
-                    .padding(horizontal = 24.dp, vertical = 8.dp)
-            },
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            // Left side button(s)
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (showBackButton) {
-                    FloatingActionButton(
-                        onClick = onBackClick,
-                        shape = CircleShape,
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Go Back"
-                        )
-                    }
-                }
-                
-                if (showWelcomeButton) {
-                    FloatingActionButton(
-                        onClick = onWelcomeClick,
-                        shape = CircleShape,
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Home,
-                            contentDescription = "Back to Welcome Screen"
-                        )
-                    }
+            // Back button (if enabled)
+            if (showBackButton) {
+                FloatingActionButton(
+                    onClick = onBackClick,
+                    modifier = Modifier.size(56.dp),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    elevation = FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 6.dp,
+                        pressedElevation = 8.dp
+                    )
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
             
-            // Right side - chat button
-            if (showChatButton) {
+            // Home/Welcome button (if enabled)
+            if (showWelcomeButton) {
                 FloatingActionButton(
-                    onClick = { showChatDialog.value = true },
-                    shape = CircleShape,
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(48.dp)
+                    onClick = onWelcomeClick,
+                    modifier = Modifier.size(56.dp),
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    elevation = FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 6.dp,
+                        pressedElevation = 8.dp
+                    )
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Chat,
-                        contentDescription = "Open Recipe Chatbot"
+                        Icons.Filled.Home,
+                        contentDescription = "Home",
+                        modifier = Modifier.size(24.dp)
                     )
                 }
+            }
+            
+            // Main Chat button (always present and centered)
+            FloatingActionButton(
+                onClick = { showChatDialog.value = true },
+                modifier = Modifier.size(64.dp),
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                elevation = FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 8.dp,
+                    pressedElevation = 12.dp
+                )
+            ) {
+                Icon(
+                    Icons.Filled.SmartToy,
+                    contentDescription = "AI Assistant",
+                    modifier = Modifier.size(28.dp)
+                )
             }
         }
     }
@@ -299,6 +397,14 @@ fun NavigationButtons(
                         }
                         item {
                             FilterChip(
+                                onClick = { handleEnhancedChat("Give me a quick pasta recipe") },
+                                label = { Text("Quick Recipe") },
+                                selected = false,
+                                leadingIcon = { Icon(Icons.Default.Timer, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                            )
+                        }
+                        item {
+                            FilterChip(
                                 onClick = { handleEnhancedChat("Nutrition information", "nutrition_info") },
                                 label = { Text("Nutrition Info") },
                                 selected = false,
@@ -325,20 +431,20 @@ fun NavigationButtons(
                                     horizontalArrangement = Arrangement.Start
                                 ) {
                                     Card(
+                                        modifier = Modifier.widthIn(max = 200.dp),
                                         colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                                        ),
-                                        shape = RoundedCornerShape(12.dp)
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                        )
                                     ) {
                                         Row(
-                                            modifier = Modifier.padding(12.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            modifier = Modifier.padding(16.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             CircularProgressIndicator(
-                                                modifier = Modifier.size(16.dp),
+                                                modifier = Modifier.size(20.dp),
                                                 strokeWidth = 2.dp
                                             )
+                                            Spacer(modifier = Modifier.width(8.dp))
                                             Text("Thinking...")
                                         }
                                     }
@@ -346,7 +452,6 @@ fun NavigationButtons(
                             }
                         }
                         
-                        // Messages
                         items(chatMessages.reversed()) { message ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -408,9 +513,10 @@ fun NavigationButtons(
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            "I can help you with:\n• Recipe suggestions\n• Ingredient recommendations\n• Nutrition information\n• Smart shopping lists",
+                                            "Ask me about recipes, ingredients, nutrition, or cooking tips! I can help you create shopping lists and discover new recipes.",
                                             style = MaterialTheme.typography.bodyMedium,
-                                            textAlign = TextAlign.Center
+                                            textAlign = TextAlign.Center,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
                                         )
                                     }
                                 }
@@ -418,13 +524,12 @@ fun NavigationButtons(
                         }
                     }
                     
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
                     // Input field
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp),
+                        verticalAlignment = Alignment.Bottom
                     ) {
                         OutlinedTextField(
                             value = userMessage,
@@ -457,6 +562,213 @@ fun NavigationButtons(
                                 contentDescription = "Send",
                                 modifier = Modifier.size(20.dp)
                             )
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Recipe Action Dialog
+    if (showRecipeActionDialog && pendingRecipe != null) {
+        Dialog(onDismissRequest = { showRecipeActionDialog = false }) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .fillMaxHeight(0.7f),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 8.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp)
+                ) {
+                    // Header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Recipe Found!",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        IconButton(onClick = { showRecipeActionDialog = false }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close")
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Recipe preview
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                pendingRecipe!!.name,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Text(
+                                "Ingredients: ${pendingRecipe!!.ingredients.size}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            
+                            Text(
+                                "Cooking Time: ${pendingRecipe!!.cookingTime}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Text(
+                                "Ingredients:",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            
+                            LazyColumn(
+                                modifier = Modifier.heightIn(max = 120.dp)
+                            ) {
+                                items(pendingRecipe!!.ingredients.take(5)) { ingredient ->
+                                    Text(
+                                        "• $ingredient",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.padding(start = 8.dp, top = 2.dp)
+                                    )
+                                }
+                                if (pendingRecipe!!.ingredients.size > 5) {
+                                    item {
+                                        Text(
+                                            "... and ${pendingRecipe!!.ingredients.size - 5} more",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            modifier = Modifier.padding(start = 8.dp, top = 2.dp),
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Place selection (if grocery view model is available)
+                    if (groceryViewModel != null && availablePlaces.isNotEmpty()) {
+                        Text(
+                            "Add ingredients to which list?",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        LazyColumn(
+                            modifier = Modifier.heightIn(max = 150.dp)
+                        ) {
+                            items(availablePlaces) { place ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { selectedPlaceId = place.id },
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (selectedPlaceId == place.id) 
+                                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+                                        else 
+                                            MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        RadioButton(
+                                            selected = selectedPlaceId == place.id,
+                                            onClick = { selectedPlaceId = place.id }
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            place.name,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                    
+                    // Action buttons
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (groceryViewModel != null && selectedPlaceId != null) {
+                            Button(
+                                onClick = {
+                                    // Add ingredients to selected grocery list
+                                    pendingRecipe!!.ingredients.forEach { ingredient ->
+                                        groceryViewModel.onEvent(
+                                            GroceryListUiEvent.OnAddItem(
+                                                name = ingredient,
+                                                quantity = 1
+                                            )
+                                        )
+                                    }
+                                    showRecipeActionDialog = false
+                                    pendingRecipe = null
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Icon(Icons.Default.ShoppingCart, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Add All Ingredients to Shopping List")
+                            }
+                        }
+                        
+                        OutlinedButton(
+                            onClick = {
+                                // TODO: Save recipe to recipe collection
+                                // This would integrate with a recipe repository/database
+                                showRecipeActionDialog = false
+                                pendingRecipe = null
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.BookmarkAdd, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Save Recipe for Later")
+                        }
+                        
+                        TextButton(
+                            onClick = {
+                                showRecipeActionDialog = false
+                                pendingRecipe = null
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Not Now")
                         }
                     }
                 }

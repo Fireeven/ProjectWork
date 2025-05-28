@@ -115,12 +115,32 @@ fun RecipeScreen(
         isLoading = true
         coroutineScope.launch {
             try {
-                val result = OpenAIHelper.getRecipeFromIngredients(availableIngredients + listOf(query))
+                val result = OpenAIHelper.getRecipeFromIngredients(
+                    if (query == "random recipe") 
+                        listOf("surprise me with a random recipe") 
+                    else 
+                        availableIngredients + listOf(query)
+                )
                 if (result.isSuccess) {
-                    suggestedRecipes = result.getOrNull() ?: emptyList()
+                    val recipes = result.getOrNull() ?: emptyList()
+                    suggestedRecipes = recipes
+                    if (recipes.isNotEmpty()) {
+                        // Show success message
+                        coroutineScope.launch {
+                            // You can add a snackbar here if needed
+                        }
+                    }
+                } else {
+                    // Handle API error
+                    coroutineScope.launch {
+                        // Show error message
+                    }
                 }
             } catch (e: Exception) {
                 // Handle error
+                coroutineScope.launch {
+                    // Show error message
+                }
             } finally {
                 isLoading = false
             }
@@ -129,19 +149,64 @@ fun RecipeScreen(
     
     // Function to get recipes based on available ingredients
     fun getRecipesFromIngredients() {
-        if (availableIngredients.isEmpty()) return
+        if (availableIngredients.isEmpty()) {
+            // Show message that no ingredients are available
+            return
+        }
         
         isLoading = true
         coroutineScope.launch {
             try {
                 val result = OpenAIHelper.getRecipeFromIngredients(availableIngredients)
                 if (result.isSuccess) {
-                    suggestedRecipes = result.getOrNull() ?: emptyList()
+                    val recipes = result.getOrNull() ?: emptyList()
+                    suggestedRecipes = recipes
+                } else {
+                    // Handle API error
                 }
             } catch (e: Exception) {
                 // Handle error
             } finally {
                 isLoading = false
+            }
+        }
+    }
+
+    // Function to add ingredients to grocery list
+    fun addIngredientsToGroceryList(ingredients: List<String>) {
+        coroutineScope.launch {
+            try {
+                // Get the first available place
+                groceryViewModel.getAllPlaces().collect { places ->
+                    if (places.isNotEmpty()) {
+                        val targetPlaceId = places.first().id
+                        
+                        // Load items for the target place first
+                        groceryViewModel.loadItems(targetPlaceId)
+                        
+                        // Add each missing ingredient
+                        ingredients.forEach { ingredient ->
+                            val ingredientTrimmed = ingredient.trim()
+                            val alreadyExists = availableIngredients.any { existing ->
+                                existing.equals(ingredientTrimmed, ignoreCase = true)
+                            }
+                            if (!alreadyExists) {
+                                groceryViewModel.onEvent(
+                                    GroceryListUiEvent.OnAddItem(
+                                        name = ingredientTrimmed,
+                                        quantity = 1
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    return@collect // Exit after first collection
+                }
+                
+                // Show success feedback
+                // You can add snackbar or toast here
+            } catch (e: Exception) {
+                // Handle error
             }
         }
     }
@@ -356,17 +421,7 @@ fun RecipeScreen(
                                 recipe = recipe,
                                 availableIngredients = availableIngredients,
                                 onAddToGroceryList = { ingredients ->
-                                    // Add missing ingredients to grocery list
-                                    ingredients.forEach { ingredient ->
-                                        if (!availableIngredients.contains(ingredient)) {
-                                            groceryViewModel.onEvent(
-                                                GroceryListUiEvent.OnAddItem(
-                                                    name = ingredient,
-                                                    quantity = 1
-                                                )
-                                            )
-                                        }
-                                    }
+                                    addIngredientsToGroceryList(ingredients)
                                 }
                             )
                         }
@@ -417,14 +472,7 @@ fun RecipeScreen(
                         EnhancedRecipeCard(
                             recipe = recipe,
                             onAddToGroceryList = { ingredients ->
-                                ingredients.forEach { ingredient ->
-                                    groceryViewModel.onEvent(
-                                        GroceryListUiEvent.OnAddItem(
-                                            name = ingredient,
-                                            quantity = 1
-                                        )
-                                    )
-                                }
+                                addIngredientsToGroceryList(ingredients)
                             }
                         )
                     }
@@ -445,6 +493,7 @@ fun RecipeScreen(
         NavigationButtons(
             onBackClick = onBackClick,
             showChatDialog = showChatDialog,
+            groceryViewModel = groceryViewModel,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
     }

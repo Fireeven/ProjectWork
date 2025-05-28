@@ -16,6 +16,14 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.PendingActions
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -45,6 +53,19 @@ import com.example.projectwork.ui.components.NavigationButtons
 import com.example.projectwork.navigation.Screen
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.Color
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import java.text.NumberFormat
+import java.util.*
 
 /**
  * Main screen for displaying and managing a place's grocery list.
@@ -75,9 +96,12 @@ fun PlaceDetailScreen(
     navController: NavController
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val availablePlaces by viewModel.getAllPlaces().collectAsState(initial = emptyList())
+    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddDialog by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
     
     // Add state for chatbot dialog
@@ -113,6 +137,8 @@ fun PlaceDetailScreen(
         label = "header_elevation"
     )
 
+    val coroutineScope = rememberCoroutineScope()
+
     LaunchedEffect(placeId) {
         viewModel.loadItems(placeId)
     }
@@ -131,6 +157,26 @@ fun PlaceDetailScreen(
                 }
                 else -> {}
             }
+        }
+    }
+
+    // Filter and sort items based on search query and sort order
+    val filteredItems = remember(uiState.items, searchQuery, uiState.sortOrder) {
+        val filtered = if (searchQuery.isBlank()) {
+            uiState.items
+        } else {
+            uiState.items.filter { item ->
+                item.name.contains(searchQuery, ignoreCase = true) ||
+                item.recipeTitle?.contains(searchQuery, ignoreCase = true) == true
+            }
+        }
+        
+        // Apply sorting to filtered items
+        when (uiState.sortOrder) {
+            SortOrder.NAME_ASC -> filtered.sortedBy { it.name.lowercase() }
+            SortOrder.NAME_DESC -> filtered.sortedByDescending { it.name.lowercase() }
+            SortOrder.QUANTITY_ASC -> filtered.sortedBy { it.quantity }
+            SortOrder.QUANTITY_DESC -> filtered.sortedByDescending { it.quantity }
         }
     }
 
@@ -184,6 +230,32 @@ fun PlaceDetailScreen(
                     }
                 },
                 actions = {
+                    // Sort buttons - directly accessible
+                    IconButton(
+                        onClick = {
+                            viewModel.onEvent(GroceryListUiEvent.OnSortOrderChanged(SortOrder.NAME_ASC))
+                        }
+                    ) {
+                        Icon(
+                            Icons.Filled.SortByAlpha,
+                            contentDescription = "Sort A-Z",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    
+                    IconButton(
+                        onClick = {
+                            viewModel.onEvent(GroceryListUiEvent.OnSortOrderChanged(SortOrder.QUANTITY_ASC))
+                        }
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Sort,
+                            contentDescription = "Sort by Quantity",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    
+                    // More options menu
                     Box {
                         IconButton(onClick = { showMenu = true }) {
                             Icon(Icons.Filled.MoreVert, contentDescription = "More options")
@@ -212,6 +284,7 @@ fun PlaceDetailScreen(
                                     Icon(Icons.Filled.Edit, contentDescription = null)
                                 }
                             )
+                            HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Sort by Name (A-Z)") },
                                 onClick = {
@@ -252,6 +325,7 @@ fun PlaceDetailScreen(
                                     Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = null)
                                 }
                             )
+                            HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Delete Place") },
                                 onClick = {
@@ -288,6 +362,7 @@ fun PlaceDetailScreen(
                     PlaceDetails(
                         place = uiState.place,
                         category = uiState.category,
+                        items = uiState.items,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp)
@@ -297,10 +372,22 @@ fun PlaceDetailScreen(
                             }
                     )
                 }
+                
+                // Static Search bar - always visible
+                item {
+                    SearchBar(
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
+                        onDismiss = { 
+                            searchQuery = "" // Only clear the search, don't hide bar
+                        },
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
 
-                // Grocery List Items
+                // Grocery List Items (using filtered items)
                 items(
-                    items = uiState.items,
+                    items = filteredItems,
                     key = { item -> item.id }
                 ) { item ->
                     AnimatedItemRow(
@@ -314,9 +401,160 @@ fun PlaceDetailScreen(
                         onQuantityChange = { newQuantity ->
                             viewModel.onEvent(GroceryListUiEvent.OnQuantityChanged(item.id, newQuantity))
                         },
+                        onPriceChange = { newPrice ->
+                            viewModel.onEvent(GroceryListUiEvent.OnPriceChanged(item.id, newPrice))
+                        },
+                        onPurchaseToggle = { isPurchased, actualPrice ->
+                            viewModel.onEvent(GroceryListUiEvent.OnPurchaseToggle(item.id, isPurchased, actualPrice))
+                        },
+                        onMoveToPlace = { newPlaceId ->
+                            viewModel.onEvent(GroceryListUiEvent.OnMoveItemToPlace(item.id, newPlaceId))
+                        },
+                        availablePlaces = availablePlaces,
                         showQuantityControls = false,
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
+                }
+                
+                // Total Amount Summary Card - at the end of the list
+                if (filteredItems.isNotEmpty()) {
+                    item {
+                        val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
+                        val totalEstimated = filteredItems.sumOf { (it.price * it.quantity) }
+                        val totalActualSpent = filteredItems.filter { it.isPurchased }.sumOf { (it.actualPrice ?: it.price) * it.quantity }
+                        val totalItems = filteredItems.size
+                        val purchasedCount = filteredItems.count { it.isPurchased }
+                        
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 8.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(20.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Shopping Summary",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                                    )
+                                    Icon(
+                                        Icons.Default.Receipt,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "Total Items",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                                        )
+                                        Text(
+                                            text = "$totalItems items",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                                        )
+                                    }
+                                    
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text(
+                                            text = "Purchased",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                                        )
+                                        Text(
+                                            text = "$purchasedCount / $totalItems",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                                        )
+                                    }
+                                }
+                                
+                                if (totalEstimated > 0) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f))
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = "Estimated Total",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                                            )
+                                            Text(
+                                                text = currencyFormatter.format(totalEstimated),
+                                                style = MaterialTheme.typography.titleLarge,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                                            )
+                                        }
+                                        
+                                        if (totalActualSpent > 0) {
+                                            Column(horizontalAlignment = Alignment.End) {
+                                                Text(
+                                                    text = "Actual Spent",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                                                )
+                                                Text(
+                                                    text = currencyFormatter.format(totalActualSpent),
+                                                    style = MaterialTheme.typography.titleLarge,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Progress bar for completion
+                                    if (totalItems > 0) {
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        
+                                        Text(
+                                            text = "Progress: ${(purchasedCount * 100 / totalItems)}% complete",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                                        )
+                                        
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        
+                                        LinearProgressIndicator(
+                                            progress = { purchasedCount.toFloat() / totalItems },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            color = MaterialTheme.colorScheme.primary,
+                                            trackColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.2f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             
@@ -324,13 +562,14 @@ fun PlaceDetailScreen(
             NavigationButtons(
                 onBackClick = onNavigateBack,
                 onWelcomeClick = { 
-                    navController.navigate(Screen.Welcome.route) {
-                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
                     }
                 },
                 showChatDialog = chatDialogState,
                 showBackButton = true,
                 showWelcomeButton = true,
+                groceryViewModel = viewModel,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 16.dp)
@@ -381,68 +620,244 @@ fun PlaceDetailScreen(
 }
 
 /**
- * Displays detailed information about a place in a card format.
- * Shows category and address information with animations.
- *
- * @param place The place entity containing the details to display
- * @param category The category of the place
+ * PlaceDetails component with enhanced spending analytics
+ * 
+ * @param place The place entity to display details for
+ * @param category The category associated with the place
+ * @param items The grocery items for spending calculations
  * @param modifier Optional modifier for customizing the layout
  */
 @Composable
 fun PlaceDetails(
     place: PlaceEntity?,
     category: Category?,
+    items: List<GroceryItem> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     if (place == null) return
 
-    Row(
+    // Calculate spending analytics
+    val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
+    val purchasedItems = items.filter { it.isPurchased }
+    val unpurchasedItems = items.filter { !it.isPurchased }
+    
+    val totalEstimated = items.sumOf { (it.price * it.quantity) }
+    val totalActualSpent = purchasedItems.sumOf { (it.actualPrice ?: it.price) * it.quantity }
+    val remainingBudget = unpurchasedItems.sumOf { (it.price * it.quantity) }
+    val savings = purchasedItems.sumOf { 
+        val estimated = it.price * it.quantity
+        val actual = (it.actualPrice ?: it.price) * it.quantity
+        estimated - actual
+    }
+
+    Column(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Category Card
-        Card(
-            modifier = Modifier.weight(1f),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
-            )
+        // Place Info Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(12.dp),
-                horizontalAlignment = Alignment.Start
+            // Category Card
+            Card(
+                modifier = Modifier.weight(1f),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
             ) {
-                Text(
-                    text = "Category",
-                    style = MaterialTheme.typography.labelMedium
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = "Category",
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                    Text(
+                        text = category?.name ?: "Uncategorized",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            // Address Card
+            Card(
+                modifier = Modifier.weight(1f),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
                 )
-                Text(
-                    text = category?.name ?: "Uncategorized",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = "Address",
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                    Text(
+                        text = place.address ?: "No address",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
-
-        // Address Card
-        Card(
-            modifier = Modifier.weight(1f),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp),
-                horizontalAlignment = Alignment.Start
+        
+        // Spending Analytics Row (only show if there are items with prices)
+        if (items.isNotEmpty() && totalEstimated > 0) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "Address",
-                    style = MaterialTheme.typography.labelMedium
-                )
-                Text(
-                    text = place.address ?: "No address",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
+                // Spent Amount Card
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.AttachMoney,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Spent",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Text(
+                            text = currencyFormatter.format(totalActualSpent),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        if (purchasedItems.isNotEmpty()) {
+                            Text(
+                                text = "${purchasedItems.size} items bought",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                }
+
+                // Budget/Remaining Card
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (remainingBudget > 0) 
+                            MaterialTheme.colorScheme.tertiaryContainer 
+                        else 
+                            MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                if (remainingBudget > 0) Icons.Default.PendingActions else Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = if (remainingBudget > 0) 
+                                    MaterialTheme.colorScheme.tertiary 
+                                else 
+                                    MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = if (remainingBudget > 0) "Remaining" else "Complete",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (remainingBudget > 0) 
+                                    MaterialTheme.colorScheme.tertiary 
+                                else 
+                                    MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Text(
+                            text = if (remainingBudget > 0) 
+                                currencyFormatter.format(remainingBudget)
+                            else 
+                                "All purchased",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (remainingBudget > 0) 
+                                MaterialTheme.colorScheme.onTertiaryContainer 
+                            else 
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (unpurchasedItems.isNotEmpty()) {
+                            Text(
+                                text = "${unpurchasedItems.size} items left",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (remainingBudget > 0) 
+                                    MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                                else 
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // Savings indicator (only if there are savings/losses)
+            if (savings != 0.0 && purchasedItems.isNotEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (savings >= 0) 
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                        else 
+                            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            if (savings >= 0) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = if (savings >= 0) 
+                                MaterialTheme.colorScheme.primary
+                            else 
+                                MaterialTheme.colorScheme.error
+                        )
+                        Text(
+                            text = if (savings >= 0) 
+                                "You saved ${currencyFormatter.format(savings)} vs estimated!"
+                            else 
+                                "You spent ${currencyFormatter.format(-savings)} more than estimated",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = if (savings >= 0) 
+                                MaterialTheme.colorScheme.primary
+                            else 
+                                MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
             }
         }
     }
@@ -515,6 +930,10 @@ private fun AnimatedItemRow(
     onCheckedChange: (Boolean) -> Unit,
     onDelete: () -> Unit,
     onQuantityChange: (Int) -> Unit,
+    onPriceChange: (Double) -> Unit = {},
+    onPurchaseToggle: (Boolean, Double?) -> Unit = { _, _ -> },
+    onMoveToPlace: (Int) -> Unit = {},
+    availablePlaces: List<PlaceEntity> = emptyList(),
     showQuantityControls: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -539,6 +958,10 @@ private fun AnimatedItemRow(
             onCheckedChange = onCheckedChange,
             onDelete = onDelete,
             onQuantityChange = onQuantityChange,
+            onPriceChange = onPriceChange,
+            onPurchaseToggle = onPurchaseToggle,
+            onMoveToPlace = onMoveToPlace,
+            availablePlaces = availablePlaces,
             showQuantityControls = showQuantityControls,
             modifier = modifier
         )
@@ -655,6 +1078,62 @@ private fun AnimatedAddItemDialog(
                             Text("Add")
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Search,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+            
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                placeholder = { Text("Search items and recipes...") },
+                singleLine = true,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent
+                )
+            )
+            
+            if (query.isNotEmpty()) {
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        Icons.Default.Clear,
+                        contentDescription = "Clear search",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }

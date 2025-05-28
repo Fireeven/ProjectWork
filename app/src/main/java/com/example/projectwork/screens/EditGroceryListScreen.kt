@@ -144,6 +144,7 @@ fun EditGroceryListScreen(
                 showChatDialog = chatDialogState,
                 showBackButton = true,
                 showWelcomeButton = false,
+                groceryViewModel = viewModel,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 16.dp)

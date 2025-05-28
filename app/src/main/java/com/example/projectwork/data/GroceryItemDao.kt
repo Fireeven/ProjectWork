@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface GroceryItemDao {
-    @Query("SELECT * FROM grocery_items WHERE placeId = :placeId ORDER BY name")
+    @Query("SELECT * FROM grocery_items WHERE placeId = :placeId ORDER BY name ASC")
     fun getItemsForPlace(placeId: Int): Flow<List<GroceryItem>>
 
     @Query("SELECT * FROM grocery_items WHERE recipeId = :recipeId")
@@ -31,7 +31,13 @@ interface GroceryItemDao {
     
     // Purchase tracking methods
     @Query("UPDATE grocery_items SET isPurchased = :isPurchased, purchaseDate = :purchaseDate, actualPrice = :actualPrice WHERE id = :itemId")
+    suspend fun updateItemPurchaseStatus(itemId: Int, isPurchased: Boolean, purchaseDate: Long?, actualPrice: Double?)
+    
+    @Query("UPDATE grocery_items SET isPurchased = :isPurchased, purchaseDate = :purchaseDate, actualPrice = :actualPrice WHERE id = :itemId")
     suspend fun markItemAsPurchased(itemId: Int, isPurchased: Boolean, purchaseDate: Long?, actualPrice: Double?)
+    
+    @Query("UPDATE grocery_items SET placeId = :newPlaceId WHERE id = :itemId")
+    suspend fun updateItemPlaceId(itemId: Int, newPlaceId: Int)
     
     @Query("SELECT * FROM grocery_items WHERE isPurchased = 1 ORDER BY purchaseDate DESC")
     fun getPurchasedItems(): Flow<List<GroceryItem>>
@@ -64,4 +70,7 @@ interface GroceryItemDao {
     
     @Query("SELECT SUM(actualPrice * quantity) FROM grocery_items WHERE isPurchased = 1 AND purchaseDate >= :startDate AND purchaseDate <= :endDate")
     fun getTotalSpendingInDateRange(startDate: Long, endDate: Long): Flow<Double?>
+
+    @Query("SELECT * FROM grocery_items ORDER BY name ASC")
+    fun getAllItems(): Flow<List<GroceryItem>>
 } 

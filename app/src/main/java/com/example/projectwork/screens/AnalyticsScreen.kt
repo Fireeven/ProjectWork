@@ -91,11 +91,18 @@ fun AnalyticsScreen(
     }
     
     // Calculate analytics data from available grocery items
-    val groceryItems = uiState.items
+    val allGroceryItems by groceryViewModel.getAllGroceryItems().collectAsState(initial = emptyList())
+    val groceryItems = allGroceryItems
     val purchasedItems = groceryItems.filter { it.isPurchased }
-    val totalSpent = purchasedItems.sumOf { it.actualPrice ?: it.price }
-    val totalItems = purchasedItems.size
+    val totalSpent = purchasedItems.sumOf { (it.actualPrice ?: it.price) * it.quantity }
+    val totalEstimated = groceryItems.sumOf { it.price * it.quantity }
+    val totalItems = purchasedItems.sumOf { it.quantity }
     val averageItemPrice = if (totalItems > 0) totalSpent / totalItems else 0.0
+    val totalSavings = purchasedItems.sumOf { 
+        val estimated = it.price * it.quantity
+        val actual = (it.actualPrice ?: it.price) * it.quantity
+        estimated - actual
+    }
     
     // Generate insights
     val insights = generateSpendingInsights(purchasedItems, totalSpent, totalItems)
@@ -231,6 +238,28 @@ fun AnalyticsScreen(
                                 value = totalItems.toString(),
                                 icon = Icons.Default.ShoppingCart,
                                 color = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                    
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            SummaryCard(
+                                title = "Total Budget",
+                                value = currencyFormatter.format(totalEstimated),
+                                icon = Icons.Default.AccountBalance,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.weight(1f)
+                            )
+                            SummaryCard(
+                                title = if (totalSavings >= 0) "Saved" else "Over Budget",
+                                value = currencyFormatter.format(kotlin.math.abs(totalSavings)),
+                                icon = if (totalSavings >= 0) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                                color = if (totalSavings >= 0) Color(0xFF10B981) else MaterialTheme.colorScheme.error,
                                 modifier = Modifier.weight(1f)
                             )
                         }

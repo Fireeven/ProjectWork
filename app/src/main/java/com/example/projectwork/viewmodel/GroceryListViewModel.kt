@@ -73,6 +73,9 @@ sealed class GroceryListUiEvent {
     data class OnAddItem(val name: String, val quantity: Int = 1) : GroceryListUiEvent()
     data class OnDeleteItem(val itemId: Int) : GroceryListUiEvent()
     data class OnQuantityChanged(val itemId: Int, val newQuantity: Int) : GroceryListUiEvent()
+    data class OnPriceChanged(val itemId: Int, val newPrice: Double) : GroceryListUiEvent()
+    data class OnPurchaseToggle(val itemId: Int, val isPurchased: Boolean, val actualPrice: Double?) : GroceryListUiEvent()
+    data class OnMoveItemToPlace(val itemId: Int, val newPlaceId: Int) : GroceryListUiEvent()
     data class OnSortOrderChanged(val sortOrder: SortOrder) : GroceryListUiEvent()
     object PlaceDeleted : GroceryListUiEvent()
 }
@@ -174,6 +177,20 @@ class GroceryListViewModel(application: Application) : AndroidViewModel(applicat
                     is GroceryListUiEvent.OnQuantityChanged -> {
                         groceryItemDao.updateItemQuantity(event.itemId, event.newQuantity)
                     }
+                    is GroceryListUiEvent.OnPriceChanged -> {
+                        groceryItemDao.updateItemPrice(event.itemId, event.newPrice)
+                    }
+                    is GroceryListUiEvent.OnPurchaseToggle -> {
+                        groceryItemDao.updateItemPurchaseStatus(
+                            event.itemId, 
+                            event.isPurchased, 
+                            if (event.isPurchased) System.currentTimeMillis() else null,
+                            event.actualPrice
+                        )
+                    }
+                    is GroceryListUiEvent.OnMoveItemToPlace -> {
+                        groceryItemDao.updateItemPlaceId(event.itemId, event.newPlaceId)
+                    }
                     is GroceryListUiEvent.PlaceDeleted -> {
                         deletePlace()
                     }
@@ -211,4 +228,14 @@ class GroceryListViewModel(application: Application) : AndroidViewModel(applicat
             }
         }
     }
+
+    /**
+     * Gets all available places for moving items
+     */
+    fun getAllPlaces() = placeDao.getAll()
+    
+    /**
+     * Gets all grocery items across all places for analytics
+     */
+    fun getAllGroceryItems() = groceryItemDao.getAllItems()
 }

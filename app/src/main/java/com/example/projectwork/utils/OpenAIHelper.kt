@@ -45,7 +45,16 @@ data class OpenAIUsage(
 // Enhanced Recipe data model
 data class SimpleRecipe(
     val name: String,
-    val ingredients: List<String>
+    val ingredients: List<String>,
+    val instructions: List<String> = listOf(
+        "Prepare your ingredients",
+        "Mix ingredients as needed",
+        "Cook according to recipe requirements",
+        "Serve and enjoy!"
+    ),
+    val cookingTime: String = "30 minutes",
+    val servings: String = "4 servings",
+    val difficulty: String = "Medium"
 )
 
 // Chat message data model
@@ -79,7 +88,9 @@ object OpenAIHelper {
     private const val TAG = "OpenAIHelper"
     private const val MODEL = "gpt-3.5-turbo"
     private const val API_URL = "https://api.openai.com/v1/chat/completions"
-    private const val API_KEY = BuildConfig.OPENAI_API_KEY
+    // TODO: Replace with your OpenAI API key
+    // For security, consider using BuildConfig or environment variables
+    private const val API_KEY = "YOUR_OPENAI_API_KEY_HERE"
 
     // Create OkHttpClient with timeout configuration
     private val client: OkHttpClient by lazy {
