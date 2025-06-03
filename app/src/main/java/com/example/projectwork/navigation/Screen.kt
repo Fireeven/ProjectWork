@@ -1,6 +1,8 @@
 package com.example.projectwork.navigation
 
 sealed class Screen(val route: String) {
+    object Loading : Screen("loading")
+    object Onboarding : Screen("onboarding")
     object Welcome : Screen("welcome")
     object Home : Screen("home")
     object AddEditPlace : Screen("addEditPlace?placeId={placeId}") {
