@@ -1,7 +1,6 @@
 package com.example.projectwork.screens
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -11,6 +10,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,7 +30,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -37,15 +38,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 
 data class OnboardingPage(
     val title: String,
     val subtitle: String,
     val description: String,
-    val emoji: String,
+    val icon: ImageVector,
     val primaryColor: Color,
-    val secondaryColor: Color
+    val secondaryColor: Color,
+    val features: List<String>
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -54,46 +55,66 @@ fun OnboardingScreen(
     onComplete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val pagerState = rememberPagerState(pageCount = { 4 })
+    val pagerState = rememberPagerState(pageCount = { 3 })
     val scope = rememberCoroutineScope()
     
     val pages = listOf(
         OnboardingPage(
-            title = "Smart Grocery Management",
-            subtitle = "Revolutionize Your Shopping",
-            description = "Transform your grocery shopping with AI-powered lists, real-time price tracking, and intelligent suggestions. Never forget an item or overspend again.",
-            emoji = "🛒",
-            primaryColor = Color(0xFF6366F1),
-            secondaryColor = Color(0xFF8B5CF6)
-        ),
-        OnboardingPage(
-            title = "AI-Powered Recipe Assistant",
-            subtitle = "Cook Like a Pro",
-            description = "Get personalized recipe recommendations based on your available ingredients. Our smart AI helps you discover new dishes and make the most of what you have.",
-            emoji = "🤖",
-            primaryColor = Color(0xFF10B981),
-            secondaryColor = Color(0xFF06B6D4)
+            title = "Enterprise Workspace",
+            subtitle = "Streamlined Project Management",
+            description = "Transform your organization with our comprehensive workspace management platform. Built for enterprise-scale operations with advanced security and compliance features.",
+            icon = Icons.Default.Business,
+            primaryColor = Color(0xFF1E40AF),
+            secondaryColor = Color(0xFF3B82F6),
+            features = listOf(
+                "Multi-project coordination",
+                "Advanced security protocols", 
+                "Real-time collaboration tools",
+                "Enterprise-grade scalability"
+            )
         ),
         OnboardingPage(
             title = "Advanced Analytics",
-            subtitle = "Track Your Spending",
-            description = "Gain insights into your shopping patterns with detailed analytics. Monitor your budget, track savings, and make informed decisions about your grocery expenses.",
-            emoji = "📊",
-            primaryColor = Color(0xFFF59E0B),
-            secondaryColor = Color(0xFFEF4444)
+            subtitle = "Data-Driven Decision Making",
+            description = "Leverage powerful analytics and business intelligence tools to gain actionable insights. Monitor performance, track KPIs, and optimize your workflow with comprehensive reporting.",
+            icon = Icons.Default.Analytics,
+            primaryColor = Color(0xFF059669),
+            secondaryColor = Color(0xFF10B981),
+            features = listOf(
+                "Custom dashboard creation",
+                "Predictive analytics engine",
+                "Automated report generation",
+                "Performance optimization insights"
+            )
         ),
         OnboardingPage(
-            title = "Ready to Get Started?",
-            subtitle = "Your Smart Shopping Journey Begins",
-            description = "Join thousands of users who have already transformed their grocery shopping experience. Start saving time, money, and effort today.",
-            emoji = "🚀",
-            primaryColor = Color(0xFFEC4899),
-            secondaryColor = Color(0xFF8B5CF6)
+            title = "Ready for Launch",
+            subtitle = "Your Digital Transformation Starts Now",
+            description = "Everything is configured and ready for your team. Begin your journey towards enhanced productivity, streamlined operations, and measurable business growth.",
+            icon = Icons.Default.Rocket,
+            primaryColor = Color(0xFF7C3AED),
+            secondaryColor = Color(0xFF8B5CF6),
+            features = listOf(
+                "Instant deployment capabilities",
+                "24/7 enterprise support",
+                "Seamless system integration",
+                "Continuous platform updates"
+            )
         )
     )
     
     Box(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF0F172A),
+                        Color(0xFF1E293B),
+                        Color(0xFF0F172A)
+                    )
+                )
+            )
     ) {
         HorizontalPager(
             state = pagerState,
@@ -111,7 +132,7 @@ fun OnboardingScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 48.dp),
+                .padding(horizontal = 32.dp, vertical = 48.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -121,24 +142,25 @@ fun OnboardingScreen(
                 enter = fadeIn() + slideInHorizontally { -it },
                 exit = fadeOut() + slideOutHorizontally { -it }
             ) {
-                IconButton(
+                OutlinedButton(
                     onClick = {
                         scope.launch {
                             pagerState.animateScrollToPage(pagerState.currentPage - 1)
                         }
                     },
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                            CircleShape
-                        )
+                    modifier = Modifier.height(48.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.White
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.3f))
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Previous",
-                        tint = MaterialTheme.colorScheme.onSurface
+                        modifier = Modifier.size(18.dp)
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Previous")
                 }
             }
             
@@ -165,28 +187,27 @@ fun OnboardingScreen(
                         onComplete()
                     }
                 },
-                modifier = Modifier
-                    .height(56.dp)
-                    .widthIn(min = 120.dp),
+                modifier = Modifier.height(48.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = pages[pagerState.currentPage].primaryColor
                 ),
-                shape = RoundedCornerShape(28.dp)
+                shape = RoundedCornerShape(24.dp)
             ) {
                 Text(
-                    text = if (pagerState.currentPage < pages.size - 1) "Next" else "Get Started",
+                    text = if (pagerState.currentPage < pages.size - 1) "Next" else "Launch Platform",
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.SemiBold
                     )
                 )
-                if (pagerState.currentPage < pages.size - 1) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    if (pagerState.currentPage < pages.size - 1) 
+                        Icons.AutoMirrored.Filled.ArrowForward 
+                    else 
+                        Icons.Default.Rocket,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
             }
         }
         
@@ -195,15 +216,18 @@ fun OnboardingScreen(
             visible = pagerState.currentPage < pages.size - 1,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(24.dp)
+                .padding(32.dp)
         ) {
             TextButton(
                 onClick = onComplete,
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    contentColor = Color.White.copy(alpha = 0.7f)
                 )
             ) {
-                Text("Skip", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    "Skip Setup",
+                    style = MaterialTheme.typography.titleSmall
+                )
             }
         }
     }
@@ -217,193 +241,161 @@ private fun OnboardingPageContent(
     modifier: Modifier = Modifier
 ) {
     val scale by animateFloatAsState(
-        targetValue = if (isActive) 1f else 0.8f,
+        targetValue = if (isActive) 1f else 0.95f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
         label = "scale"
     )
     
     val alpha by animateFloatAsState(
-        targetValue = if (isActive) 1f else 0.6f,
+        targetValue = if (isActive) 1f else 0.7f,
         animationSpec = tween(600),
         label = "alpha"
     )
     
-    // Floating animation for emoji
-    val floatingOffset by rememberInfiniteTransition(label = "floating").animateFloat(
-        initialValue = 0f,
-        targetValue = 20f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "floating"
-    )
-    
-    Box(
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
         modifier = modifier
             .fillMaxSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(
-                        page.primaryColor.copy(alpha = 0.1f),
-                        page.secondaryColor.copy(alpha = 0.05f),
-                        MaterialTheme.colorScheme.background
-                    ),
-                    radius = 1200f
-                )
-            )
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                this.alpha = alpha
-            },
-        contentAlignment = Alignment.Center
+            .scale(scale)
+            .padding(horizontal = 32.dp)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(horizontal = 32.dp)
+        // Professional icon section
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            page.primaryColor.copy(alpha = 0.2f),
+                            page.secondaryColor.copy(alpha = 0.1f)
+                        )
+                    )
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            // Animated background decoration
-            Box(
-                modifier = Modifier
-                    .size(200.dp)
-                    .offset(y = (-floatingOffset).dp),
-                contentAlignment = Alignment.Center
-            ) {
-                // Background circles
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    drawAnimatedBackground(this, page.primaryColor, page.secondaryColor)
-                }
-                
-                // Main emoji
-                Text(
-                    text = page.emoji,
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontSize = 80.sp
-                    ),
-                    modifier = Modifier.offset(y = floatingOffset.dp)
-                )
+            // Background decoration
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawProfessionalBackground(this, page.primaryColor, page.secondaryColor)
             }
             
-            Spacer(modifier = Modifier.height(48.dp))
-            
-            // Title
-            Text(
-                text = page.title,
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 28.sp
-                ),
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center
+            Icon(
+                imageVector = page.icon,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = page.primaryColor
             )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Subtitle
-            Text(
-                text = page.subtitle,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                color = page.primaryColor,
-                textAlign = TextAlign.Center
-            )
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // Description
-            Text(
-                text = page.description,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    lineHeight = 24.sp
-                ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            
-            Spacer(modifier = Modifier.height(48.dp))
-            
-            // Feature highlights for each page
-            when (pageIndex) {
-                0 -> FeatureList(
-                    features = listOf(
-                        "🎯 Smart shopping lists with AI suggestions",
-                        "💰 Real-time price tracking and alerts",
-                        "📱 Seamless mobile experience"
-                    ),
-                    color = page.primaryColor
-                )
-                1 -> FeatureList(
-                    features = listOf(
-                        "🍳 Personalized recipe recommendations",
-                        "🧠 AI-powered ingredient analysis",
-                        "⭐ Save and organize favorite recipes"
-                    ),
-                    color = page.primaryColor
-                )
-                2 -> FeatureList(
-                    features = listOf(
-                        "📈 Detailed spending analytics",
-                        "🎯 Budget tracking and insights",
-                        "💡 Smart saving recommendations"
-                    ),
-                    color = page.primaryColor
-                )
-                3 -> FeatureList(
-                    features = listOf(
-                        "🚀 Ready in less than 2 minutes",
-                        "🔒 Your data stays private and secure",
-                        "🆓 Free to use with premium features"
-                    ),
-                    color = page.primaryColor
-                )
+        }
+        
+        Spacer(modifier = Modifier.height(48.dp))
+        
+        // Title section
+        Text(
+            text = page.title,
+            style = MaterialTheme.typography.headlineLarge.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 32.sp,
+                letterSpacing = 0.5.sp
+            ),
+            color = Color.White,
+            textAlign = TextAlign.Center
+        )
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        Text(
+            text = page.subtitle,
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.Normal,
+                letterSpacing = 0.25.sp
+            ),
+            color = page.primaryColor,
+            textAlign = TextAlign.Center
+        )
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        // Description
+        Text(
+            text = page.description,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                lineHeight = 28.sp,
+                fontWeight = FontWeight.Normal
+            ),
+            color = Color.White.copy(alpha = 0.8f),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        
+        Spacer(modifier = Modifier.height(48.dp))
+        
+        // Professional feature cards
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.heightIn(max = 200.dp)
+        ) {
+            page.features.forEachIndexed { index, feature ->
+                item {
+                    var visible by remember { mutableStateOf(false) }
+                    
+                    LaunchedEffect(isActive) {
+                        if (isActive) {
+                            delay(index * 150L)
+                            visible = true
+                        }
+                    }
+                    
+                    AnimatedVisibility(
+                        visible = visible,
+                        enter = fadeIn(tween(600)) + slideInHorizontally { it / 2 }
+                    ) {
+                        FeatureCard(
+                            feature = feature,
+                            color = page.primaryColor
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun FeatureList(
-    features: List<String>,
+private fun FeatureCard(
+    feature: String,
     color: Color,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White.copy(alpha = 0.05f)
+        ),
+        shape = RoundedCornerShape(12.dp)
     ) {
-        features.forEachIndexed { index, feature ->
-            var visible by remember { mutableStateOf(false) }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(color)
+            )
             
-            LaunchedEffect(Unit) {
-                delay(index * 200L)
-                visible = true
-            }
+            Spacer(modifier = Modifier.width(16.dp))
             
-            AnimatedVisibility(
-                visible = visible,
-                enter = fadeIn(tween(500)) + slideInHorizontally { it }
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .background(color, CircleShape)
-                    )
-                    
-                    Text(
-                        text = feature,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            Text(
+                text = feature,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                color = Color.White.copy(alpha = 0.9f)
+            )
         }
     }
 }
@@ -414,50 +406,37 @@ private fun PageIndicator(
     color: Color,
     modifier: Modifier = Modifier
 ) {
-    val width by animateDpAsState(
-        targetValue = if (isActive) 24.dp else 8.dp,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "width"
-    )
-    
-    val colorAnimated by animateColorAsState(
-        targetValue = if (isActive) color else color.copy(alpha = 0.3f),
+    val width by animateFloatAsState(
+        targetValue = if (isActive) 32f else 8f,
         animationSpec = tween(300),
-        label = "color"
+        label = "width"
     )
     
     Box(
         modifier = modifier
-            .width(width)
+            .width(width.dp)
             .height(8.dp)
+            .clip(RoundedCornerShape(4.dp))
             .background(
-                color = colorAnimated,
-                shape = CircleShape
+                if (isActive) color else Color.White.copy(alpha = 0.3f)
             )
     )
 }
 
-private fun drawAnimatedBackground(
-    drawScope: DrawScope,
-    primaryColor: Color,
-    secondaryColor: Color
-) {
-    val strokeWidth = 2f // Use Float instead of dp for simplicity
-    val center = Offset(drawScope.size.width / 2, drawScope.size.height / 2)
+private fun drawProfessionalBackground(drawScope: DrawScope, primaryColor: Color, secondaryColor: Color) {
+    val size = drawScope.size
+    val center = Offset(size.width / 2, size.height / 2)
     
-    // Draw multiple concentric circles with different colors and sizes
-    for (i in 0..3) {
-        val radius = (drawScope.size.minDimension / 2) - (i * 50f) // Use Float
-        val alpha = 0.3f - (i * 0.05f)
-        val color = if (i % 2 == 0) primaryColor else secondaryColor
+    // Subtle geometric patterns
+    repeat(3) { index ->
+        val radius = (size.minDimension / 2) * (0.3f + index * 0.15f)
+        val alpha = 0.1f / (index + 1)
         
-        if (radius > 0) {
-            drawScope.drawCircle(
-                color = color.copy(alpha = alpha),
-                radius = radius,
-                center = center,
-                style = Stroke(width = strokeWidth)
-            )
-        }
+        drawScope.drawCircle(
+            color = if (index % 2 == 0) primaryColor.copy(alpha = alpha) else secondaryColor.copy(alpha = alpha),
+            radius = radius,
+            center = center,
+            style = Stroke(width = 3f)
+        )
     }
 } 

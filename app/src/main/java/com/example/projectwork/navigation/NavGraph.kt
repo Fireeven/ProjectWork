@@ -10,7 +10,6 @@ import com.example.projectwork.screens.AddEditPlaceScreen
 import com.example.projectwork.screens.PlaceDetailScreen
 import com.example.projectwork.screens.GroceryListScreen
 import com.example.projectwork.screens.EditGroceryListScreen
-import com.example.projectwork.screens.WelcomeScreen
 import com.example.projectwork.screens.RecipeScreen
 import com.example.projectwork.screens.AnalyticsScreen
 import com.example.projectwork.screens.HomeScreen
@@ -36,19 +35,8 @@ fun AppNavigation(navController: NavHostController) {
         composable(Screen.Onboarding.route) {
             OnboardingScreen(
                 onComplete = {
-                    navController.navigate(Screen.Welcome.route) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable(Screen.Welcome.route) {
-            WelcomeScreen(
-                onNavigateToHome = { 
                     navController.navigate(Screen.Home.route) {
-                        // Clear the back stack so user can't go back to welcome screen
-                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
                     }
                 }
             )
@@ -78,8 +66,8 @@ fun AppNavigation(navController: NavHostController) {
                 placeId = entry.arguments?.getString("placeId")?.toIntOrNull(),
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToWelcome = {
-                    navController.navigate(Screen.Welcome.route) {
-                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
                     }
                 }
             )

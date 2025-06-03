@@ -5,16 +5,18 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
@@ -23,8 +25,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import kotlin.math.cos
-import kotlin.math.sin
 
 @Composable
 fun LoadingScreen(
@@ -34,51 +34,51 @@ fun LoadingScreen(
     var progress by remember { mutableFloatStateOf(0f) }
     var currentStep by remember { mutableIntStateOf(0) }
     
-    val steps = listOf(
-        "Initializing ProjectWork...",
-        "Setting up your workspace...",
-        "Loading smart features...",
-        "Preparing grocery intelligence...",
-        "Almost ready..."
+    val loadingSteps = listOf(
+        "Initializing secure environment...",
+        "Loading enterprise modules...",
+        "Configuring user workspace...",
+        "Preparing dashboard components...",
+        "Finalizing system setup..."
     )
     
     // Smooth progress animation
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
-        animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 400, easing = EaseInOutCubic),
         label = "progress"
     )
     
-    // Rotation animation for the outer ring
+    // Rotation animation for the logo ring
     val rotation by rememberInfiniteTransition(label = "rotation").animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
+            animation = tween(3000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "rotation"
     )
     
-    // Scale animation for the logo
-    val scale by rememberInfiniteTransition(label = "scale").animateFloat(
-        initialValue = 0.8f,
-        targetValue = 1.2f,
+    // Pulse animation for accent elements
+    val pulse by rememberInfiniteTransition(label = "pulse").animateFloat(
+        initialValue = 0.7f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = FastOutSlowInEasing),
+            animation = tween(2000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "scale"
+        label = "pulse"
     )
     
     // Progress simulation
     LaunchedEffect(Unit) {
-        steps.forEachIndexed { index, _ ->
+        loadingSteps.forEachIndexed { index, _ ->
             currentStep = index
-            delay(1000) // Wait 1 second for each step
-            progress = (index + 1) / steps.size.toFloat()
+            delay(1200) // Professional pacing
+            progress = (index + 1) / loadingSteps.size.toFloat()
         }
-        delay(500) // Extra delay before completing
+        delay(600) // Final pause before transition
         onLoadingComplete()
     }
     
@@ -86,123 +86,141 @@ fun LoadingScreen(
         modifier = modifier
             .fillMaxSize()
             .background(
-                Brush.radialGradient(
+                Brush.verticalGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.surface
-                    ),
-                    radius = 1000f
+                        Color(0xFF0F1419), // Dark blue-gray
+                        Color(0xFF1A1F2E), // Darker blue-gray
+                        Color(0xFF0F1419)
+                    )
                 )
             ),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(horizontal = 32.dp)
         ) {
-            // Logo/Brand area with animated background
+            // Professional logo section
             Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .scale(scale),
+                modifier = Modifier.size(140.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // Animated background circle
-                val density = LocalDensity.current
-                val primaryColor = MaterialTheme.colorScheme.primary
+                // Outer rotating ring
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
                         .rotate(rotation)
                 ) {
-                    drawAnimatedCircle(this, primaryColor, density)
+                    drawProfessionalRings(this, pulse)
                 }
                 
-                // Logo placeholder (you can replace this with your actual logo)
+                // Inner logo container
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
+                        .size(90.dp)
+                        .clip(RoundedCornerShape(20.dp))
                         .background(
                             Brush.linearGradient(
                                 colors = listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.secondary
+                                    Color(0xFF2563EB), // Professional blue
+                                    Color(0xFF1D4ED8), // Darker blue
+                                    Color(0xFF1E40AF)  // Deep blue
                                 )
                             )
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "PW",
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 28.sp
-                        ),
-                        color = Color.White
-                    )
+                    // Company logo/monogram
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "PW",
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 28.sp,
+                                letterSpacing = 2.sp
+                            ),
+                            color = Color.White
+                        )
+                        Box(
+                            modifier = Modifier
+                                .width(24.dp)
+                                .height(2.dp)
+                                .background(Color.White.copy(alpha = 0.8f))
+                        )
+                    }
                 }
             }
             
             Spacer(modifier = Modifier.height(48.dp))
             
-            // App name and tagline
+            // Company branding
             Text(
                 text = "ProjectWork",
                 style = MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 32.sp
+                    fontWeight = FontWeight.Light,
+                    fontSize = 32.sp,
+                    letterSpacing = 1.5.sp
                 ),
-                color = MaterialTheme.colorScheme.onBackground
+                color = Color.White
             )
             
             Text(
-                text = "Smart Grocery Management",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = "Enterprise Workspace Solutions",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Normal,
+                    letterSpacing = 0.5.sp
+                ),
+                color = Color.White.copy(alpha = 0.7f),
                 modifier = Modifier.padding(top = 8.dp)
             )
             
-            Spacer(modifier = Modifier.height(64.dp))
+            Spacer(modifier = Modifier.height(80.dp))
             
-            // Progress indicator
+            // Progress section
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                // Custom progress bar
+                // Professional progress bar
                 Box(
                     modifier = Modifier
-                        .width(280.dp)
-                        .height(6.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .fillMaxWidth()
+                        .padding(horizontal = 40.dp)
+                        .height(3.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(Color.White.copy(alpha = 0.1f))
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxHeight()
                             .fillMaxWidth(animatedProgress)
-                            .clip(CircleShape)
+                            .clip(RoundedCornerShape(2.dp))
                             .background(
-                                Brush.linearGradient(
+                                Brush.horizontalGradient(
                                     colors = listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.secondary
+                                        Color(0xFF3B82F6),
+                                        Color(0xFF06B6D4),
+                                        Color(0xFF8B5CF6)
                                     )
                                 )
                             )
                     )
                 }
                 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
                 
-                // Loading text
+                // Status text
                 Text(
-                    text = if (currentStep < steps.size) steps[currentStep] else "Ready!",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = if (currentStep < loadingSteps.size) loadingSteps[currentStep] else "System ready",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = Color.White.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 32.dp)
+                    modifier = Modifier.padding(horizontal = 24.dp)
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -210,103 +228,106 @@ fun LoadingScreen(
                 // Progress percentage
                 Text(
                     text = "${(animatedProgress * 100).toInt()}%",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Light,
+                        letterSpacing = 1.sp
                     ),
-                    color = MaterialTheme.colorScheme.primary
+                    color = Color(0xFF3B82F6)
                 )
             }
             
-            Spacer(modifier = Modifier.height(64.dp))
+            Spacer(modifier = Modifier.height(60.dp))
             
-            // Features preview
+            // Subtle loading indicators
             Row(
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
-                modifier = Modifier.padding(horizontal = 32.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(top = 20.dp)
             ) {
-                FeatureIcon(
-                    text = "🛒",
-                    label = "Smart Lists",
-                    isActive = progress > 0.2f
-                )
-                FeatureIcon(
-                    text = "📊",
-                    label = "Analytics",
-                    isActive = progress > 0.4f
-                )
-                FeatureIcon(
-                    text = "🤖",
-                    label = "AI Assistant",
-                    isActive = progress > 0.6f
-                )
-                FeatureIcon(
-                    text = "🍳",
-                    label = "Recipes",
-                    isActive = progress > 0.8f
-                )
+                repeat(4) { index ->
+                    val delay = index * 200L
+                    val alpha by rememberInfiniteTransition(label = "indicator$index").animateFloat(
+                        initialValue = 0.2f,
+                        targetValue = 0.8f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(1200, delayMillis = delay.toInt()),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "alpha$index"
+                    )
+                    
+                    Box(
+                        modifier = Modifier
+                            .size(4.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = alpha))
+                    )
+                }
             }
         }
-    }
-}
-
-@Composable
-private fun FeatureIcon(
-    text: String,
-    label: String,
-    isActive: Boolean,
-    modifier: Modifier = Modifier
-) {
-    val alpha by animateFloatAsState(
-        targetValue = if (isActive) 1f else 0.3f,
-        animationSpec = tween(500),
-        label = "alpha"
-    )
-    
-    val scale by animateFloatAsState(
-        targetValue = if (isActive) 1f else 0.8f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "scale"
-    )
-    
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.scale(scale)
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.headlineMedium,
+        
+        // Professional footer
+        Column(
             modifier = Modifier
-                .size(48.dp)
-                .wrapContentSize(),
-            color = Color.Unspecified.copy(alpha = alpha)
-        )
-        
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha),
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-private fun drawAnimatedCircle(drawScope: DrawScope, color: Color, density: androidx.compose.ui.unit.Density) {
-    with(density) {
-        val strokeWidth = 4.dp.toPx()
-        val radius = (drawScope.size.minDimension - strokeWidth) / 2
-        val center = Offset(drawScope.size.width / 2, drawScope.size.height / 2)
-        
-        // Draw multiple animated circles
-        for (i in 0..2) {
-            val animatedRadius = radius - (i * 15.dp.toPx())
-            val alpha = 1f - (i * 0.3f)
-            
-            drawScope.drawCircle(
-                color = color.copy(alpha = alpha),
-                radius = animatedRadius,
-                center = center,
-                style = Stroke(width = strokeWidth)
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 40.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "© 2025 ProjectWork Enterprise",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    letterSpacing = 0.5.sp
+                ),
+                color = Color.White.copy(alpha = 0.4f)
+            )
+            Text(
+                text = "Version 2.1.0",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.3f),
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
+    }
+}
+
+private fun drawProfessionalRings(drawScope: DrawScope, pulse: Float) {
+    val center = Offset(drawScope.size.width / 2, drawScope.size.height / 2)
+    val baseRadius = drawScope.size.minDimension / 2 * 0.85f
+    
+    // Outer accent ring
+    drawScope.drawCircle(
+        color = Color(0xFF3B82F6).copy(alpha = 0.3f * pulse),
+        radius = baseRadius,
+        center = center,
+        style = Stroke(width = 9f, cap = StrokeCap.Round)
+    )
+    
+    // Middle ring with gradient effect
+    drawScope.drawArc(
+        color = Color(0xFF06B6D4).copy(alpha = 0.6f),
+        startAngle = -90f,
+        sweepAngle = 120f,
+        useCenter = false,
+        topLeft = Offset(
+            center.x - baseRadius * 0.8f,
+            center.y - baseRadius * 0.8f
+        ),
+        size = Size(baseRadius * 1.6f, baseRadius * 1.6f),
+        style = Stroke(width = 6f, cap = StrokeCap.Round)
+    )
+    
+    // Inner accent dots
+    repeat(8) { index ->
+        val angle = (index * 45f) * (Math.PI / 180f)
+        val dotRadius = baseRadius * 0.75f
+        val dotCenter = Offset(
+            center.x + (dotRadius * kotlin.math.cos(angle)).toFloat(),
+            center.y + (dotRadius * kotlin.math.sin(angle)).toFloat()
+        )
+        
+        drawScope.drawCircle(
+            color = Color(0xFF8B5CF6).copy(alpha = 0.4f * pulse),
+            radius = 6f,
+            center = dotCenter
+        )
     }
 } 

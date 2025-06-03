@@ -64,8 +64,9 @@ fun BottomNavBar(navController: NavController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    // Don't show bottom nav on welcome screen
-    if (currentDestination?.route == Screen.Welcome.route) {
+    // Don't show bottom nav on loading and onboarding screens
+    if (currentDestination?.route == Screen.Loading.route || 
+        currentDestination?.route == Screen.Onboarding.route) {
         return
     }
 
