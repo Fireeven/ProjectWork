@@ -14,35 +14,13 @@ import com.example.projectwork.screens.WelcomeScreen
 import com.example.projectwork.screens.RecipeScreen
 import com.example.projectwork.screens.AnalyticsScreen
 import com.example.projectwork.screens.HomeScreen
-import com.example.projectwork.screens.LoadingScreen
-import com.example.projectwork.screens.OnboardingScreen
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Loading.route
+        startDestination = Screen.Welcome.route
     ) {
-        composable(Screen.Loading.route) {
-            LoadingScreen(
-                onLoadingComplete = {
-                    navController.navigate(Screen.Onboarding.route) {
-                        popUpTo(Screen.Loading.route) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable(Screen.Onboarding.route) {
-            OnboardingScreen(
-                onComplete = {
-                    navController.navigate(Screen.Welcome.route) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
-                    }
-                }
-            )
-        }
-
         composable(Screen.Welcome.route) {
             WelcomeScreen(
                 onNavigateToHome = { 
