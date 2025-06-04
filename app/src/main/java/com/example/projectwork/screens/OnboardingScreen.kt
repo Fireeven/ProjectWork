@@ -9,6 +9,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
@@ -16,7 +17,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -28,10 +28,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -39,14 +36,13 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-data class OnboardingPage(
+data class SmartFeaturePage(
     val title: String,
     val subtitle: String,
     val description: String,
     val icon: ImageVector,
-    val primaryColor: Color,
-    val secondaryColor: Color,
-    val features: List<String>
+    val accentColor: Color,
+    val benefits: List<String>
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -58,47 +54,44 @@ fun OnboardingScreen(
     val pagerState = rememberPagerState(pageCount = { 3 })
     val scope = rememberCoroutineScope()
     
-    val pages = listOf(
-        OnboardingPage(
-            title = "Enterprise Workspace",
-            subtitle = "Streamlined Project Management",
-            description = "Transform your organization with our comprehensive workspace management platform. Built for enterprise-scale operations with advanced security and compliance features.",
-            icon = Icons.Default.Business,
-            primaryColor = Color(0xFF1E40AF),
-            secondaryColor = Color(0xFF3B82F6),
-            features = listOf(
-                "Multi-project coordination",
-                "Advanced security protocols", 
-                "Real-time collaboration tools",
-                "Enterprise-grade scalability"
+    val smartPages = listOf(
+        SmartFeaturePage(
+            title = "AI-Powered Shopping",
+            subtitle = "Intelligence that learns from you",
+            description = "Experience the future of grocery shopping with our advanced AI that understands your preferences, suggests items, and optimizes your shopping experience.",
+            icon = Icons.Default.Psychology,
+            accentColor = Color(0xFF4ADE80),
+            benefits = listOf(
+                "Smart product recommendations",
+                "Personalized shopping lists",
+                "Price optimization alerts",
+                "Inventory tracking"
             )
         ),
-        OnboardingPage(
-            title = "Advanced Analytics",
-            subtitle = "Data-Driven Decision Making",
-            description = "Leverage powerful analytics and business intelligence tools to gain actionable insights. Monitor performance, track KPIs, and optimize your workflow with comprehensive reporting.",
-            icon = Icons.Default.Analytics,
-            primaryColor = Color(0xFF059669),
-            secondaryColor = Color(0xFF10B981),
-            features = listOf(
-                "Custom dashboard creation",
-                "Predictive analytics engine",
-                "Automated report generation",
-                "Performance optimization insights"
+        SmartFeaturePage(
+            title = "Seamless Organization",
+            subtitle = "Everything in perfect order",
+            description = "Keep your shopping organized with intuitive categorization, smart sorting, and automated list management that saves you time and reduces stress.",
+            icon = Icons.Default.Category,
+            accentColor = Color(0xFF06B6D4),
+            benefits = listOf(
+                "Auto-categorized items",
+                "Smart list sharing",
+                "Store layout optimization",
+                "Quick add shortcuts"
             )
         ),
-        OnboardingPage(
-            title = "Ready for Launch",
-            subtitle = "Your Digital Transformation Starts Now",
-            description = "Everything is configured and ready for your team. Begin your journey towards enhanced productivity, streamlined operations, and measurable business growth.",
-            icon = Icons.Default.Rocket,
-            primaryColor = Color(0xFF7C3AED),
-            secondaryColor = Color(0xFF8B5CF6),
-            features = listOf(
-                "Instant deployment capabilities",
-                "24/7 enterprise support",
-                "Seamless system integration",
-                "Continuous platform updates"
+        SmartFeaturePage(
+            title = "Ready to Start",
+            subtitle = "Your smart shopping journey begins",
+            description = "Join thousands who have transformed their shopping experience. Start saving time, money, and effort with Smart Cart's intelligent features.",
+            icon = Icons.Default.ShoppingCart,
+            accentColor = Color(0xFF3B82F6),
+            benefits = listOf(
+                "Instant setup",
+                "No learning curve",
+                "Works offline",
+                "Always improving"
             )
         )
     )
@@ -106,80 +99,44 @@ fun OnboardingScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0F172A),
-                        Color(0xFF1E293B),
-                        Color(0xFF0F172A)
-                    )
-                )
-            )
+            .background(Color(0xFFF8FAFC))
     ) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize()
         ) { page ->
-            OnboardingPageContent(
-                page = pages[page],
+            SmartPageContent(
+                page = smartPages[page],
                 pageIndex = page,
                 isActive = pagerState.currentPage == page
             )
         }
         
-        // Navigation controls
-        Row(
+        // Minimalist navigation
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 32.dp, vertical = 48.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Back button
-            AnimatedVisibility(
-                visible = pagerState.currentPage > 0,
-                enter = fadeIn() + slideInHorizontally { -it },
-                exit = fadeOut() + slideOutHorizontally { -it }
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        scope.launch {
-                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                        }
-                    },
-                    modifier = Modifier.height(48.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color.White
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.3f))
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Previous",
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Previous")
-                }
-            }
-            
             // Page indicators
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(bottom = 32.dp)
             ) {
-                repeat(pages.size) { index ->
-                    PageIndicator(
+                repeat(smartPages.size) { index ->
+                    SmartPageIndicator(
                         isActive = index == pagerState.currentPage,
-                        color = pages[pagerState.currentPage].primaryColor
+                        accentColor = smartPages[pagerState.currentPage].accentColor
                     )
                 }
             }
             
-            // Next/Finish button
+            // Action button
             Button(
                 onClick = {
-                    if (pagerState.currentPage < pages.size - 1) {
+                    if (pagerState.currentPage < smartPages.size - 1) {
                         scope.launch {
                             pagerState.animateScrollToPage(pagerState.currentPage + 1)
                         }
@@ -187,46 +144,55 @@ fun OnboardingScreen(
                         onComplete()
                     }
                 },
-                modifier = Modifier.height(48.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = pages[pagerState.currentPage].primaryColor
+                    containerColor = smartPages[pagerState.currentPage].accentColor
                 ),
-                shape = RoundedCornerShape(24.dp)
+                shape = RoundedCornerShape(16.dp),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 2.dp
+                )
             ) {
                 Text(
-                    text = if (pagerState.currentPage < pages.size - 1) "Next" else "Launch Platform",
-                    style = MaterialTheme.typography.titleSmall.copy(
+                    text = if (pagerState.currentPage < smartPages.size - 1) "Continue" else "Start Shopping Smart",
+                    style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold
-                    )
+                    ),
+                    color = Color.White
                 )
+                
                 Spacer(modifier = Modifier.width(8.dp))
+                
                 Icon(
-                    if (pagerState.currentPage < pages.size - 1) 
-                        Icons.AutoMirrored.Filled.ArrowForward 
-                    else 
-                        Icons.Default.Rocket,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp),
+                    tint = Color.White
                 )
             }
         }
         
-        // Skip button
+        // Skip option
         AnimatedVisibility(
-            visible = pagerState.currentPage < pages.size - 1,
+            visible = pagerState.currentPage < smartPages.size - 1,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(32.dp)
+                .padding(24.dp)
         ) {
             TextButton(
                 onClick = onComplete,
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = Color.White.copy(alpha = 0.7f)
+                    contentColor = Color(0xFF64748B)
                 )
             ) {
                 Text(
-                    "Skip Setup",
-                    style = MaterialTheme.typography.titleSmall
+                    "Skip",
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Medium
+                    )
                 )
             }
         }
@@ -234,125 +200,135 @@ fun OnboardingScreen(
 }
 
 @Composable
-private fun OnboardingPageContent(
-    page: OnboardingPage,
+private fun SmartPageContent(
+    page: SmartFeaturePage,
     pageIndex: Int,
     isActive: Boolean,
     modifier: Modifier = Modifier
 ) {
     val scale by animateFloatAsState(
-        targetValue = if (isActive) 1f else 0.95f,
+        targetValue = if (isActive) 1f else 0.98f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
         label = "scale"
     )
     
-    val alpha by animateFloatAsState(
-        targetValue = if (isActive) 1f else 0.7f,
-        animationSpec = tween(600),
-        label = "alpha"
+    val iconScale by rememberInfiniteTransition(label = "iconPulse$pageIndex").animateFloat(
+        initialValue = 1f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "iconScale"
     )
     
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
         modifier = modifier
             .fillMaxSize()
             .scale(scale)
-            .padding(horizontal = 32.dp)
+            .padding(horizontal = 32.dp, vertical = 60.dp)
     ) {
-        // Professional icon section
+        Spacer(modifier = Modifier.height(40.dp))
+        
+        // Feature icon
         Box(
             modifier = Modifier
                 .size(120.dp)
-                .clip(RoundedCornerShape(24.dp))
+                .scale(iconScale)
+                .clip(CircleShape)
                 .background(
-                    Brush.linearGradient(
+                    Brush.radialGradient(
                         colors = listOf(
-                            page.primaryColor.copy(alpha = 0.2f),
-                            page.secondaryColor.copy(alpha = 0.1f)
-                        )
+                            page.accentColor.copy(alpha = 0.1f),
+                            page.accentColor.copy(alpha = 0.05f),
+                            Color.Transparent
+                        ),
+                        radius = 200f
                     )
+                )
+                .border(
+                    width = 1.dp,
+                    color = page.accentColor.copy(alpha = 0.2f),
+                    shape = CircleShape
                 ),
             contentAlignment = Alignment.Center
         ) {
-            // Background decoration
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                drawProfessionalBackground(this, page.primaryColor, page.secondaryColor)
-            }
-            
             Icon(
                 imageVector = page.icon,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
-                tint = page.primaryColor
+                tint = page.accentColor
             )
         }
         
         Spacer(modifier = Modifier.height(48.dp))
         
-        // Title section
-        Text(
-            text = page.title,
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize = 32.sp,
-                letterSpacing = 0.5.sp
-            ),
-            color = Color.White,
-            textAlign = TextAlign.Center
-        )
+        // Content section
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = page.title,
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 32.sp,
+                    letterSpacing = (-0.5).sp
+                ),
+                color = Color(0xFF1E293B),
+                textAlign = TextAlign.Center
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Text(
+                text = page.subtitle,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                color = page.accentColor,
+                textAlign = TextAlign.Center
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Text(
+                text = page.description,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    lineHeight = 28.sp,
+                    fontWeight = FontWeight.Normal
+                ),
+                color = Color(0xFF475569),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+        }
         
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(40.dp))
         
-        Text(
-            text = page.subtitle,
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.Normal,
-                letterSpacing = 0.25.sp
-            ),
-            color = page.primaryColor,
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        // Description
-        Text(
-            text = page.description,
-            style = MaterialTheme.typography.bodyLarge.copy(
-                lineHeight = 28.sp,
-                fontWeight = FontWeight.Normal
-            ),
-            color = Color.White.copy(alpha = 0.8f),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        
-        Spacer(modifier = Modifier.height(48.dp))
-        
-        // Professional feature cards
+        // Benefits list
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.heightIn(max = 200.dp)
         ) {
-            page.features.forEachIndexed { index, feature ->
+            page.benefits.forEachIndexed { index, benefit ->
                 item {
                     var visible by remember { mutableStateOf(false) }
                     
                     LaunchedEffect(isActive) {
                         if (isActive) {
-                            delay(index * 150L)
+                            delay(index * 100L)
                             visible = true
                         }
                     }
                     
                     AnimatedVisibility(
                         visible = visible,
-                        enter = fadeIn(tween(600)) + slideInHorizontally { it / 2 }
+                        enter = fadeIn(tween(500)) + slideInHorizontally { it / 3 }
                     ) {
-                        FeatureCard(
-                            feature = feature,
-                            color = page.primaryColor
+                        SmartBenefitItem(
+                            benefit = benefit,
+                            accentColor = page.accentColor
                         )
                     }
                 }
@@ -362,52 +338,57 @@ private fun OnboardingPageContent(
 }
 
 @Composable
-private fun FeatureCard(
-    feature: String,
-    color: Color,
+private fun SmartBenefitItem(
+    benefit: String,
+    accentColor: Color,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White.copy(alpha = 0.05f)
-        ),
-        shape = RoundedCornerShape(12.dp)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(color)
-            )
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Text(
-                text = feature,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Medium
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(accentColor.copy(alpha = 0.1f))
+                .border(
+                    width = 1.dp,
+                    color = accentColor.copy(alpha = 0.3f),
+                    shape = CircleShape
                 ),
-                color = Color.White.copy(alpha = 0.9f)
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                modifier = Modifier.size(12.dp),
+                tint = accentColor
             )
         }
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        Text(
+            text = benefit,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.Medium
+            ),
+            color = Color(0xFF334155)
+        )
     }
 }
 
 @Composable
-private fun PageIndicator(
+private fun SmartPageIndicator(
     isActive: Boolean,
-    color: Color,
+    accentColor: Color,
     modifier: Modifier = Modifier
 ) {
     val width by animateFloatAsState(
-        targetValue = if (isActive) 32f else 8f,
+        targetValue = if (isActive) 24f else 8f,
         animationSpec = tween(300),
         label = "width"
     )
@@ -418,25 +399,7 @@ private fun PageIndicator(
             .height(8.dp)
             .clip(RoundedCornerShape(4.dp))
             .background(
-                if (isActive) color else Color.White.copy(alpha = 0.3f)
+                if (isActive) accentColor else Color(0xFFE2E8F0)
             )
     )
-}
-
-private fun drawProfessionalBackground(drawScope: DrawScope, primaryColor: Color, secondaryColor: Color) {
-    val size = drawScope.size
-    val center = Offset(size.width / 2, size.height / 2)
-    
-    // Subtle geometric patterns
-    repeat(3) { index ->
-        val radius = (size.minDimension / 2) * (0.3f + index * 0.15f)
-        val alpha = 0.1f / (index + 1)
-        
-        drawScope.drawCircle(
-            color = if (index % 2 == 0) primaryColor.copy(alpha = alpha) else secondaryColor.copy(alpha = alpha),
-            radius = radius,
-            center = center,
-            style = Stroke(width = 3f)
-        )
-    }
 } 

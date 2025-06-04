@@ -12,14 +12,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -34,300 +35,311 @@ fun LoadingScreen(
     var progress by remember { mutableFloatStateOf(0f) }
     var currentStep by remember { mutableIntStateOf(0) }
     
-    val loadingSteps = listOf(
-        "Initializing secure environment...",
-        "Loading enterprise modules...",
-        "Configuring user workspace...",
-        "Preparing dashboard components...",
-        "Finalizing system setup..."
+    val smartSteps = listOf(
+        "Initializing Smart Cart AI...",
+        "Loading intelligent algorithms...",
+        "Connecting to product database...",
+        "Preparing smart recommendations...",
+        "Ready to optimize your shopping..."
     )
     
     // Smooth progress animation
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
-        animationSpec = tween(durationMillis = 400, easing = EaseInOutCubic),
+        animationSpec = tween(durationMillis = 600, easing = EaseInOutCubic),
         label = "progress"
     )
     
-    // Rotation animation for the logo ring
-    val rotation by rememberInfiniteTransition(label = "rotation").animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "rotation"
-    )
-    
-    // Pulse animation for accent elements
-    val pulse by rememberInfiniteTransition(label = "pulse").animateFloat(
-        initialValue = 0.7f,
-        targetValue = 1f,
+    // Brain pulse animation
+    val brainPulse by rememberInfiniteTransition(label = "brainPulse").animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.1f,
         animationSpec = infiniteRepeatable(
             animation = tween(2000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "pulse"
+        label = "brainPulse"
+    )
+    
+    // Connection lines animation
+    val connectionAlpha by rememberInfiniteTransition(label = "connections").animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "connectionAlpha"
+    )
+    
+    // Logo rotation
+    val logoRotation by rememberInfiniteTransition(label = "logoRotation").animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(20000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "logoRotation"
     )
     
     // Progress simulation
     LaunchedEffect(Unit) {
-        loadingSteps.forEachIndexed { index, _ ->
+        smartSteps.forEachIndexed { index, _ ->
             currentStep = index
-            delay(1200) // Professional pacing
-            progress = (index + 1) / loadingSteps.size.toFloat()
+            delay(1000)
+            progress = (index + 1) / smartSteps.size.toFloat()
         }
-        delay(600) // Final pause before transition
+        delay(800)
         onLoadingComplete()
     }
     
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0F1419), // Dark blue-gray
-                        Color(0xFF1A1F2E), // Darker blue-gray
-                        Color(0xFF0F1419)
-                    )
-                )
-            ),
+            .background(Color(0xFFF8FAFC)), // Clean light background
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(horizontal = 32.dp)
+            modifier = Modifier.padding(48.dp)
         ) {
-            // Professional logo section
+            // Smart Cart Logo Section
             Box(
-                modifier = Modifier.size(140.dp),
+                modifier = Modifier
+                    .size(160.dp)
+                    .scale(brainPulse),
                 contentAlignment = Alignment.Center
             ) {
-                // Outer rotating ring
-                Canvas(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .rotate(rotation)
-                ) {
-                    drawProfessionalRings(this, pulse)
-                }
-                
-                // Inner logo container
+                // Gradient background circle
                 Box(
                     modifier = Modifier
-                        .size(90.dp)
-                        .clip(RoundedCornerShape(20.dp))
+                        .fillMaxSize()
+                        .rotate(logoRotation)
+                        .clip(CircleShape)
                         .background(
-                            Brush.linearGradient(
+                            Brush.radialGradient(
                                 colors = listOf(
-                                    Color(0xFF2563EB), // Professional blue
-                                    Color(0xFF1D4ED8), // Darker blue
-                                    Color(0xFF1E40AF)  // Deep blue
-                                )
+                                    Color(0xFF4ADE80), // Green
+                                    Color(0xFF06B6D4), // Cyan
+                                    Color(0xFF3B82F6)  // Blue
+                                ),
+                                radius = 300f
                             )
-                        ),
-                    contentAlignment = Alignment.Center
+                        )
+                )
+                
+                // Brain and cart illustration
+                Canvas(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .scale(0.8f)
                 ) {
-                    // Company logo/monogram
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "PW",
-                            style = MaterialTheme.typography.headlineLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 28.sp,
-                                letterSpacing = 2.sp
-                            ),
-                            color = Color.White
-                        )
-                        Box(
-                            modifier = Modifier
-                                .width(24.dp)
-                                .height(2.dp)
-                                .background(Color.White.copy(alpha = 0.8f))
-                        )
-                    }
+                    drawSmartCartLogo(this, connectionAlpha)
                 }
             }
             
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(40.dp))
             
-            // Company branding
+            // Brand name
             Text(
-                text = "ProjectWork",
+                text = "Smart Cart",
                 style = MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.Light,
-                    fontSize = 32.sp,
-                    letterSpacing = 1.5.sp
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 36.sp,
+                    letterSpacing = 1.sp
                 ),
-                color = Color.White
+                color = Color(0xFF1E293B)
             )
             
             Text(
-                text = "Enterprise Workspace Solutions",
+                text = "Intelligent Shopping Assistant",
                 style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Normal,
+                    fontWeight = FontWeight.Medium,
                     letterSpacing = 0.5.sp
                 ),
-                color = Color.White.copy(alpha = 0.7f),
+                color = Color(0xFF64748B),
                 modifier = Modifier.padding(top = 8.dp)
             )
             
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(60.dp))
             
-            // Progress section
+            // Minimalist progress section
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Professional progress bar
+                // Clean progress indicator
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 40.dp)
-                        .height(3.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(Color.White.copy(alpha = 0.1f))
+                        .height(2.dp)
+                        .clip(RoundedCornerShape(1.dp))
+                        .background(Color(0xFFE2E8F0))
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxHeight()
                             .fillMaxWidth(animatedProgress)
-                            .clip(RoundedCornerShape(2.dp))
+                            .clip(RoundedCornerShape(1.dp))
                             .background(
                                 Brush.horizontalGradient(
                                     colors = listOf(
-                                        Color(0xFF3B82F6),
-                                        Color(0xFF06B6D4),
-                                        Color(0xFF8B5CF6)
+                                        Color(0xFF4ADE80),
+                                        Color(0xFF06B6D4)
                                     )
                                 )
                             )
                     )
                 }
                 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
                 
                 // Status text
                 Text(
-                    text = if (currentStep < loadingSteps.size) loadingSteps[currentStep] else "System ready",
+                    text = if (currentStep < smartSteps.size) smartSteps[currentStep] else "Welcome to Smart Cart!",
                     style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Normal
                     ),
-                    color = Color.White.copy(alpha = 0.8f),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 24.dp)
+                    color = Color(0xFF475569),
+                    textAlign = TextAlign.Center
                 )
                 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(32.dp))
                 
-                // Progress percentage
-                Text(
-                    text = "${(animatedProgress * 100).toInt()}%",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Light,
-                        letterSpacing = 1.sp
-                    ),
-                    color = Color(0xFF3B82F6)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(60.dp))
-            
-            // Subtle loading indicators
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.padding(top = 20.dp)
-            ) {
-                repeat(4) { index ->
-                    val delay = index * 200L
-                    val alpha by rememberInfiniteTransition(label = "indicator$index").animateFloat(
-                        initialValue = 0.2f,
-                        targetValue = 0.8f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(1200, delayMillis = delay.toInt()),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "alpha$index"
-                    )
-                    
-                    Box(
-                        modifier = Modifier
-                            .size(4.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = alpha))
-                    )
+                // Minimalist loading dots
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    repeat(3) { index ->
+                        val delay = index * 300L
+                        val scale by rememberInfiniteTransition(label = "dot$index").animateFloat(
+                            initialValue = 0.6f,
+                            targetValue = 1f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(900, delayMillis = delay.toInt()),
+                                repeatMode = RepeatMode.Reverse
+                            ),
+                            label = "scale$index"
+                        )
+                        
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .scale(scale)
+                                .clip(CircleShape)
+                                .background(Color(0xFF06B6D4))
+                        )
+                    }
                 }
             }
         }
         
-        // Professional footer
-        Column(
+        // Clean footer
+        Text(
+            text = "Powered by AI • Version 2.1",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color(0xFF94A3B8),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 40.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "© 2025 ProjectWork Enterprise",
-                style = MaterialTheme.typography.labelSmall.copy(
-                    letterSpacing = 0.5.sp
-                ),
-                color = Color.White.copy(alpha = 0.4f)
-            )
-            Text(
-                text = "Version 2.1.0",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.3f),
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
+                .padding(bottom = 32.dp)
+        )
     }
 }
 
-private fun drawProfessionalRings(drawScope: DrawScope, pulse: Float) {
+private fun drawSmartCartLogo(drawScope: DrawScope, connectionAlpha: Float) {
     val center = Offset(drawScope.size.width / 2, drawScope.size.height / 2)
-    val baseRadius = drawScope.size.minDimension / 2 * 0.85f
+    val brainCenter = Offset(center.x, center.y - 20f)
     
-    // Outer accent ring
-    drawScope.drawCircle(
-        color = Color(0xFF3B82F6).copy(alpha = 0.3f * pulse),
-        radius = baseRadius,
-        center = center,
-        style = Stroke(width = 9f, cap = StrokeCap.Round)
-    )
-    
-    // Middle ring with gradient effect
-    drawScope.drawArc(
-        color = Color(0xFF06B6D4).copy(alpha = 0.6f),
-        startAngle = -90f,
-        sweepAngle = 120f,
-        useCenter = false,
-        topLeft = Offset(
-            center.x - baseRadius * 0.8f,
-            center.y - baseRadius * 0.8f
-        ),
-        size = Size(baseRadius * 1.6f, baseRadius * 1.6f),
-        style = Stroke(width = 6f, cap = StrokeCap.Round)
-    )
-    
-    // Inner accent dots
-    repeat(8) { index ->
-        val angle = (index * 45f) * (Math.PI / 180f)
-        val dotRadius = baseRadius * 0.75f
-        val dotCenter = Offset(
-            center.x + (dotRadius * kotlin.math.cos(angle)).toFloat(),
-            center.y + (dotRadius * kotlin.math.sin(angle)).toFloat()
-        )
-        
-        drawScope.drawCircle(
-            color = Color(0xFF8B5CF6).copy(alpha = 0.4f * pulse),
-            radius = 6f,
-            center = dotCenter
+    // Draw brain outline (simplified)
+    val brainPath = Path().apply {
+        // Simplified brain shape
+        addOval(
+            androidx.compose.ui.geometry.Rect(
+                offset = Offset(brainCenter.x - 25f, brainCenter.y - 15f),
+                size = Size(50f, 30f)
+            )
         )
     }
+    
+    drawScope.drawPath(
+        path = brainPath,
+        color = Color.White.copy(alpha = 0.9f),
+        style = Stroke(width = 3f)
+    )
+    
+    // Draw brain segments
+    drawScope.drawLine(
+        start = Offset(brainCenter.x, brainCenter.y - 10f),
+        end = Offset(brainCenter.x, brainCenter.y + 10f),
+        color = Color.White.copy(alpha = 0.7f),
+        strokeWidth = 2f
+    )
+    
+    // Draw connection lines to cart
+    val cartCenter = Offset(center.x, center.y + 30f)
+    
+    // Connection nodes
+    val nodes = listOf(
+        Offset(brainCenter.x - 15f, brainCenter.y + 5f),
+        Offset(brainCenter.x + 15f, brainCenter.y + 5f),
+        Offset(cartCenter.x - 10f, cartCenter.y - 15f),
+        Offset(cartCenter.x + 10f, cartCenter.y - 15f)
+    )
+    
+    // Draw connection lines
+    nodes.forEachIndexed { index, node ->
+        if (index < 2) {
+            val targetNode = nodes[index + 2]
+            drawScope.drawLine(
+                start = node,
+                end = targetNode,
+                color = Color.White.copy(alpha = connectionAlpha * 0.8f),
+                strokeWidth = 2f,
+                cap = StrokeCap.Round
+            )
+        }
+        
+        // Draw connection nodes
+        drawScope.drawCircle(
+            color = Color.White.copy(alpha = connectionAlpha),
+            radius = 3f,
+            center = node
+        )
+    }
+    
+    // Draw simplified shopping cart
+    val cartWidth = 20f
+    val cartHeight = 15f
+    
+    // Cart body
+    drawScope.drawRoundRect(
+        color = Color.White.copy(alpha = 0.9f),
+        topLeft = Offset(cartCenter.x - cartWidth/2, cartCenter.y - cartHeight/2),
+        size = Size(cartWidth, cartHeight),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(2f),
+        style = Stroke(width = 2.5f)
+    )
+    
+    // Cart handle
+    drawScope.drawLine(
+        start = Offset(cartCenter.x - cartWidth/2 - 5f, cartCenter.y - cartHeight/2 + 3f),
+        end = Offset(cartCenter.x - cartWidth/2, cartCenter.y - cartHeight/2 + 3f),
+        color = Color.White.copy(alpha = 0.9f),
+        strokeWidth = 2.5f,
+        cap = StrokeCap.Round
+    )
+    
+    // Cart wheels
+    drawScope.drawCircle(
+        color = Color.White.copy(alpha = 0.9f),
+        radius = 3f,
+        center = Offset(cartCenter.x - 6f, cartCenter.y + cartHeight/2 + 6f)
+    )
+    drawScope.drawCircle(
+        color = Color.White.copy(alpha = 0.9f),
+        radius = 3f,
+        center = Offset(cartCenter.x + 6f, cartCenter.y + cartHeight/2 + 6f)
+    )
 } 
