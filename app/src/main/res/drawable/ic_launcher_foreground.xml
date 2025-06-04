@@ -4,66 +4,118 @@
     android:viewportWidth="108"
     android:viewportHeight="108"
     android:tint="#FFFFFF">
-  <group android:scaleX="0.7"
-      android:scaleY="0.7"
+  <group android:scaleX="0.75"
+      android:scaleY="0.75"
       android:pivotX="54"
       android:pivotY="54">
     
-    <!-- Modern geometric central element -->
+    <!-- Outer glow ring -->
     <path
-        android:pathData="M54,25 
-                       C62,25 69,32 69,40
-                       C69,48 62,55 54,55
-                       C46,55 39,48 39,40
-                       C39,32 46,25 54,25 Z"
-        android:fillColor="#4ADE80" />
-    
-    <!-- Inner design elements -->
-    <path
-        android:pathData="M46,40 L62,40 L62,56 L46,56 Z"
-        android:fillColor="#FFFFFF" />
-    
-    <!-- Abstract "S" curve -->
-    <path
-        android:pathData="M49,44 Q52,42 55,44 Q58,46 61,44 Q58,50 55,52 Q52,54 49,52"
+        android:pathData="M54,20 
+                       C67,20 78,31 78,44
+                       C78,57 67,68 54,68
+                       C41,68 30,57 30,44
+                       C30,31 41,20 54,20 Z"
         android:strokeWidth="2"
-        android:strokeColor="#667eea"
-        android:strokeLineCap="round"
+        android:strokeColor="#40FFFFFF"
         android:fillColor="#00FFFFFF" />
     
-    <!-- Floating accent dots -->
+    <!-- Main central element -->
     <path
-        android:pathData="M 42 35 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+        android:pathData="M54,25 
+                       C64,25 72,33 72,43
+                       C72,53 64,61 54,61
+                       C44,61 36,53 36,43
+                       C36,33 44,25 54,25 Z"
+        android:fillColor="#4ADE80" />
+    
+    <!-- Inner design layer -->
+    <path
+        android:pathData="M54,30 
+                       C60,30 65,35 65,41
+                       C65,47 60,52 54,52
+                       C48,52 43,47 43,41
+                       C43,35 48,30 54,30 Z"
+        android:fillColor="#FFFFFF" />
+    
+    <!-- Central geometric pattern -->
+    <path
+        android:pathData="M48,37 L60,37 L60,49 L48,49 Z"
+        android:fillColor="#667eea" />
+    
+    <!-- Dynamic inner elements -->
+    <path
+        android:pathData="M50,39 L58,39 L58,41 L50,41 Z"
+        android:fillColor="#FFFFFF" />
+    <path
+        android:pathData="M50,43 L58,43 L58,45 L50,45 Z"
+        android:fillColor="#FFFFFF" />
+    <path
+        android:pathData="M50,47 L58,47 L58,47.5 L50,47.5 Z"
+        android:fillColor="#FFFFFF" />
+    
+    <!-- Corner orbital elements -->
+    <path
+        android:pathData="M 40 32 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
         android:fillColor="#06B6D4" />
     <path
-        android:pathData="M 66 35 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+        android:pathData="M 68 32 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
         android:fillColor="#06B6D4" />
     <path
-        android:pathData="M 42 61 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+        android:pathData="M 40 56 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
         android:fillColor="#8B5CF6" />
     <path
-        android:pathData="M 66 61 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+        android:pathData="M 68 56 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
         android:fillColor="#8B5CF6" />
     
     <!-- Connection lines -->
     <path
-        android:pathData="M42,37 L46,42"
+        android:pathData="M40,35 L48,40"
         android:strokeWidth="1.5"
         android:strokeColor="#06B6D4"
         android:strokeLineCap="round" />
     <path
-        android:pathData="M66,37 L62,42"
+        android:pathData="M68,35 L60,40"
         android:strokeWidth="1.5"
         android:strokeColor="#06B6D4"
         android:strokeLineCap="round" />
     
-    <!-- Bottom geometric elements -->
+    <!-- Bottom floating elements -->
     <path
-        android:pathData="M48,65 L60,65 L60,68 L48,68 Z"
+        android:pathData="M46,70 L62,70 L62,73 L46,73 Z"
         android:fillColor="#667eea" />
     <path
-        android:pathData="M50,70 L58,70 L58,72 L50,72 Z"
+        android:pathData="M48,75 L60,75 L60,77 L48,77 Z"
         android:fillColor="#8B5CF6" />
+    <path
+        android:pathData="M50,79 L58,79 L58,80.5 L50,80.5 Z"
+        android:fillColor="#f093fb" />
+    
+    <!-- Additional accent particles -->
+    <path
+        android:pathData="M 30 44 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+        android:fillColor="#4ADE80" />
+    <path
+        android:pathData="M 78 44 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+        android:fillColor="#4ADE80" />
+    <path
+        android:pathData="M 54 18 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+        android:fillColor="#f093fb" />
+    <path
+        android:pathData="M 54 70 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+        android:fillColor="#f093fb" />
+    
+    <!-- Network connection lines -->
+    <path
+        android:pathData="M30,44 L40,35"
+        android:strokeWidth="1"
+        android:strokeColor="#30FFFFFF"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M78,44 L68,35"
+        android:strokeWidth="1"
+        android:strokeColor="#30FFFFFF"
+        android:strokeLineCap="round" />
     
   </group>
 </vector>

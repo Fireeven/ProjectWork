@@ -1,19 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     
-    <!-- Modern gradient background -->
+    <!-- Base animated gradient background -->
     <item>
         <shape android:shape="rectangle">
             <gradient
                 android:type="linear"
-                android:angle="45"
+                android:angle="135"
                 android:startColor="#667eea"
                 android:centerColor="#764ba2"
                 android:endColor="#f093fb" />
         </shape>
     </item>
     
-    <!-- Floating particles effect -->
+    <!-- Animated wave layer 1 -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="600dp"
+                android:centerX="0.1"
+                android:centerY="0.2"
+                android:startColor="#30667eea"
+                android:endColor="#00667eea" />
+        </shape>
+    </item>
+    
+    <!-- Animated wave layer 2 -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="500dp"
+                android:centerX="0.9"
+                android:centerY="0.8"
+                android:startColor="#30f093fb"
+                android:endColor="#00f093fb" />
+        </shape>
+    </item>
+    
+    <!-- Moving particles and shapes -->
     <item>
         <vector
             android:width="400dp"
@@ -21,116 +47,191 @@
             android:viewportWidth="400"
             android:viewportHeight="800">
             
-            <!-- Floating circles of different sizes -->
+            <!-- Large floating circles -->
             <path
-                android:pathData="M 50 100 m -8 0 a 8 8 0 0 1 16 0 a 8 8 0 0 1 -16 0"
-                android:fillColor="#40FFFFFF" />
+                android:pathData="M 80 120 m -25 0 a 25 25 0 0 1 50 0 a 25 25 0 0 1 -50 0"
+                android:fillColor="#20FFFFFF" />
             <path
-                android:pathData="M 350 150 m -6 0 a 6 6 0 0 1 12 0 a 6 6 0 0 1 -12 0"
-                android:fillColor="#60FFFFFF" />
-            <path
-                android:pathData="M 80 250 m -4 0 a 4 4 0 0 1 8 0 a 4 4 0 0 1 -8 0"
-                android:fillColor="#50FFFFFF" />
-            <path
-                android:pathData="M 320 300 m -10 0 a 10 10 0 0 1 20 0 a 10 10 0 0 1 -20 0"
+                android:pathData="M 320 180 m -20 0 a 20 20 0 0 1 40 0 a 20 20 0 0 1 -40 0"
                 android:fillColor="#30FFFFFF" />
             <path
-                android:pathData="M 150 180 m -5 0 a 5 5 0 0 1 10 0 a 5 5 0 0 1 -10 0"
-                android:fillColor="#70FFFFFF" />
-            <path
-                android:pathData="M 280 220 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
-                android:fillColor="#80FFFFFF" />
+                android:pathData="M 150 280 m -15 0 a 15 15 0 0 1 30 0 a 15 15 0 0 1 -30 0"
+                android:fillColor="#25FFFFFF" />
             
-            <!-- More particles -->
+            <!-- Medium floating shapes -->
             <path
-                android:pathData="M 120 350 m -7 0 a 7 7 0 0 1 14 0 a 7 7 0 0 1 -14 0"
-                android:fillColor="#45FFFFFF" />
+                android:pathData="M 60 350 m -12 0 a 12 12 0 0 1 24 0 a 12 12 0 0 1 -24 0"
+                android:fillColor="#40FFFFFF" />
             <path
-                android:pathData="M 30 400 m -4 0 a 4 4 0 0 1 8 0 a 4 4 0 0 1 -8 0"
-                android:fillColor="#60FFFFFF" />
-            <path
-                android:pathData="M 370 450 m -9 0 a 9 9 0 0 1 18 0 a 9 9 0 0 1 -18 0"
+                android:pathData="M 340 420 m -18 0 a 18 18 0 0 1 36 0 a 18 18 0 0 1 -36 0"
                 android:fillColor="#35FFFFFF" />
             <path
-                android:pathData="M 200 480 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
-                android:fillColor="#75FFFFFF" />
+                android:pathData="M 200 500 m -10 0 a 10 10 0 0 1 20 0 a 10 20 0 0 1 -20 0"
+                android:fillColor="#45FFFFFF" />
             
-            <!-- Bottom particles -->
+            <!-- Small particles -->
             <path
-                android:pathData="M 90 600 m -6 0 a 6 6 0 0 1 12 0 a 6 6 0 0 1 -12 0"
+                android:pathData="M 120 150 m -5 0 a 5 5 0 0 1 10 0 a 5 5 0 0 1 -10 0"
+                android:fillColor="#60FFFFFF" />
+            <path
+                android:pathData="M 280 220 m -4 0 a 4 4 0 0 1 8 0 a 4 4 0 0 1 -8 0"
+                android:fillColor="#70FFFFFF" />
+            <path
+                android:pathData="M 50 320 m -6 0 a 6 6 0 0 1 12 0 a 6 6 0 0 1 -12 0"
+                android:fillColor="#55FFFFFF" />
+            <path
+                android:pathData="M 350 380 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
+                android:fillColor="#80FFFFFF" />
+            
+            <!-- Geometric floating shapes -->
+            <path
+                android:pathData="M 100 250 L 115 250 L 115 265 L 100 265 Z"
+                android:fillColor="#30667eea" />
+            <path
+                android:pathData="M 300 320 L 312 320 L 312 332 L 300 332 Z"
+                android:fillColor="#30f093fb" />
+            
+            <!-- Hexagonal shapes -->
+            <path
+                android:pathData="M 180 400 L 190 395 L 200 400 L 200 410 L 190 415 L 180 410 Z"
+                android:fillColor="#40764ba2" />
+            
+            <!-- More bottom particles -->
+            <path
+                android:pathData="M 90 600 m -8 0 a 8 8 0 0 1 16 0 a 8 8 0 0 1 -16 0"
                 android:fillColor="#50FFFFFF" />
             <path
-                android:pathData="M 310 650 m -4 0 a 4 4 0 0 1 8 0 a 4 4 0 0 1 -8 0"
+                android:pathData="M 310 650 m -6 0 a 6 6 0 0 1 12 0 a 6 6 0 0 1 -12 0"
                 android:fillColor="#65FFFFFF" />
             <path
-                android:pathData="M 160 700 m -8 0 a 8 8 0 0 1 16 0 a 8 8 0 0 1 -16 0"
+                android:pathData="M 160 700 m -10 0 a 10 10 0 0 1 20 0 a 10 10 0 0 1 -20 0"
                 android:fillColor="#40FFFFFF" />
+            
+            <!-- Connection lines creating network effect -->
+            <path
+                android:pathData="M 80 120 L 150 280"
+                android:strokeWidth="1"
+                android:strokeColor="#30FFFFFF"
+                android:strokeLineCap="round" />
+            <path
+                android:pathData="M 320 180 L 200 500"
+                android:strokeWidth="1"
+                android:strokeColor="#25FFFFFF"
+                android:strokeLineCap="round" />
+            <path
+                android:pathData="M 150 280 L 300 320"
+                android:strokeWidth="1"
+                android:strokeColor="#20FFFFFF"
+                android:strokeLineCap="round" />
             
         </vector>
     </item>
     
-    <!-- Central modern logo/brand mark -->
+    <!-- Central modern logo with enhanced design -->
     <item android:gravity="center">
         <vector
-            android:width="120dp"
-            android:height="120dp"
-            android:viewportWidth="120"
-            android:viewportHeight="120">
+            android:width="140dp"
+            android:height="140dp"
+            android:viewportWidth="140"
+            android:viewportHeight="140">
             
-            <!-- Modern "S" shape -->
+            <!-- Outer glow ring -->
             <path
-                android:pathData="M 30 25 Q 45 15, 60 25 Q 75 35, 90 25 Q 75 45, 60 55 Q 45 65, 30 55 Q 45 75, 60 85 Q 75 95, 90 85"
-                android:strokeWidth="6"
-                android:strokeColor="#FFFFFF"
-                android:strokeLineCap="round"
+                android:pathData="M 70 70 m -50 0 a 50 50 0 0 1 100 0 a 50 50 0 0 1 -100 0"
+                android:strokeWidth="2"
+                android:strokeColor="#30FFFFFF"
                 android:fillColor="#00FFFFFF" />
             
-            <!-- Modern "C" shape -->
+            <!-- Main central circle -->
             <path
-                android:pathData="M 85 40 Q 95 30, 105 40 Q 110 50, 105 60 Q 95 70, 85 60"
-                android:strokeWidth="5"
-                android:strokeColor="#FFFFFF"
-                android:strokeLineCap="round"
-                android:fillColor="#00FFFFFF" />
+                android:pathData="M 70 70 m -35 0 a 35 35 0 0 1 70 0 a 35 35 0 0 1 -70 0"
+                android:fillColor="#4ADE80" />
+            
+            <!-- Inner white circle -->
+            <path
+                android:pathData="M 70 70 m -25 0 a 25 25 0 0 1 50 0 a 25 25 0 0 1 -50 0"
+                android:fillColor="#FFFFFF" />
+            
+            <!-- Modern geometric pattern inside -->
+            <path
+                android:pathData="M 60 60 L 80 60 L 80 80 L 60 80 Z"
+                android:fillColor="#667eea" />
+            
+            <!-- Diamond accent -->
+            <path
+                android:pathData="M 70 55 L 75 60 L 70 65 L 65 60 Z"
+                android:fillColor="#FFFFFF" />
+            
+            <!-- Corner accent dots -->
+            <path
+                android:pathData="M 45 45 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
+                android:fillColor="#06B6D4" />
+            <path
+                android:pathData="M 95 45 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
+                android:fillColor="#06B6D4" />
+            <path
+                android:pathData="M 45 95 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
+                android:fillColor="#8B5CF6" />
+            <path
+                android:pathData="M 95 95 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
+                android:fillColor="#8B5CF6" />
+            
+            <!-- Orbital rings -->
+            <path
+                android:pathData="M 70 30 m -5 0 a 5 5 0 0 1 10 0 a 5 5 0 0 1 -10 0"
+                android:fillColor="#f093fb" />
+            <path
+                android:pathData="M 70 110 m -5 0 a 5 5 0 0 1 10 0 a 5 5 0 0 1 -10 0"
+                android:fillColor="#f093fb" />
+            <path
+                android:pathData="M 30 70 m -5 0 a 5 5 0 0 1 10 0 a 5 5 0 0 1 -10 0"
+                android:fillColor="#f093fb" />
+            <path
+                android:pathData="M 110 70 m -5 0 a 5 5 0 0 1 10 0 a 5 5 0 0 1 -10 0"
+                android:fillColor="#f093fb" />
+            
+        </vector>
+    </item>
+    
+    <!-- Dynamic brand text area -->
+    <item android:gravity="center|bottom" android:bottom="100dp">
+        <vector
+            android:width="250dp"
+            android:height="60dp"
+            android:viewportWidth="250"
+            android:viewportHeight="60">
+            
+            <!-- Dynamic text blocks with varied lengths -->
+            <path
+                android:pathData="M 40 20 L 80 20 L 80 25 L 40 25 Z"
+                android:fillColor="#FFFFFF" />
+            <path
+                android:pathData="M 90 20 L 130 20 L 130 25 L 90 25 Z"
+                android:fillColor="#FFFFFF" />
+            <path
+                android:pathData="M 140 20 L 210 20 L 210 25 L 140 25 Z"
+                android:fillColor="#FFFFFF" />
+            
+            <!-- Second line -->
+            <path
+                android:pathData="M 60 35 L 100 35 L 100 40 L 60 40 Z"
+                android:fillColor="#FFFFFF" />
+            <path
+                android:pathData="M 110 35 L 190 35 L 190 40 L 110 40 Z"
+                android:fillColor="#FFFFFF" />
+            
+            <!-- Subtitle with accent -->
+            <path
+                android:pathData="M 80 50 L 170 50 L 170 52 L 80 52 Z"
+                android:fillColor="#B3FFFFFF" />
             
             <!-- Accent dots -->
             <path
-                android:pathData="M 25 30 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
+                android:pathData="M 210 22 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
                 android:fillColor="#4ADE80" />
             <path
-                android:pathData="M 95 85 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
+                android:pathData="M 190 37 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
                 android:fillColor="#06B6D4" />
-            
-        </vector>
-    </item>
-    
-    <!-- App name in modern typography style -->
-    <item android:gravity="center|bottom" android:bottom="120dp">
-        <vector
-            android:width="200dp"
-            android:height="50dp"
-            android:viewportWidth="200"
-            android:viewportHeight="50">
-            
-            <!-- Modern text blocks representing "SMART CART" -->
-            <path
-                android:pathData="M 20 15 L 45 15 L 45 20 L 20 20 Z"
-                android:fillColor="#FFFFFF" />
-            <path
-                android:pathData="M 50 15 L 80 15 L 80 20 L 50 20 Z"
-                android:fillColor="#FFFFFF" />
-            
-            <path
-                android:pathData="M 120 15 L 145 15 L 145 20 L 120 20 Z"
-                android:fillColor="#FFFFFF" />
-            <path
-                android:pathData="M 150 15 L 180 15 L 180 20 L 150 20 Z"
-                android:fillColor="#FFFFFF" />
-            
-            <!-- Subtitle line -->
-            <path
-                android:pathData="M 60 35 L 140 35 L 140 37 L 60 37 Z"
-                android:fillColor="#B3FFFFFF" />
             
         </vector>
     </item>
