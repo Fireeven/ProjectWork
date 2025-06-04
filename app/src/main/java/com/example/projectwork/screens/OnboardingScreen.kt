@@ -227,14 +227,14 @@ private fun SmartPageContent(
         modifier = modifier
             .fillMaxSize()
             .scale(scale)
-            .padding(horizontal = 32.dp, vertical = 60.dp)
+            .padding(horizontal = 32.dp, vertical = 40.dp)
     ) {
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         
         // Feature icon
         Box(
             modifier = Modifier
-                .size(120.dp)
+                .size(100.dp)
                 .scale(iconScale)
                 .clip(CircleShape)
                 .background(
@@ -257,29 +257,30 @@ private fun SmartPageContent(
             Icon(
                 imageVector = page.icon,
                 contentDescription = null,
-                modifier = Modifier.size(48.dp),
+                modifier = Modifier.size(40.dp),
                 tint = page.accentColor
             )
         }
         
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(32.dp))
         
         // Content section
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.weight(1f)
         ) {
             Text(
                 text = page.title,
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold,
-                    fontSize = 32.sp,
+                    fontSize = 28.sp,
                     letterSpacing = (-0.5).sp
                 ),
                 color = Color(0xFF1E293B),
                 textAlign = TextAlign.Center
             )
             
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             
             Text(
                 text = page.subtitle,
@@ -290,50 +291,56 @@ private fun SmartPageContent(
                 textAlign = TextAlign.Center
             )
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             Text(
                 text = page.description,
                 style = MaterialTheme.typography.bodyLarge.copy(
-                    lineHeight = 28.sp,
-                    fontWeight = FontWeight.Normal
+                    lineHeight = 24.sp,
+                    fontWeight = FontWeight.Normal,
+                    fontSize = 16.sp
                 ),
                 color = Color(0xFF475569),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
-        }
-        
-        Spacer(modifier = Modifier.height(40.dp))
-        
-        // Benefits list
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.heightIn(max = 200.dp)
-        ) {
-            page.benefits.forEachIndexed { index, benefit ->
-                item {
-                    var visible by remember { mutableStateOf(false) }
-                    
-                    LaunchedEffect(isActive) {
-                        if (isActive) {
-                            delay(index * 100L)
-                            visible = true
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Benefits list with better spacing
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .heightIn(max = 150.dp)
+                    .fillMaxWidth()
+            ) {
+                page.benefits.forEachIndexed { index, benefit ->
+                    item {
+                        var visible by remember { mutableStateOf(false) }
+                        
+                        LaunchedEffect(isActive) {
+                            if (isActive) {
+                                delay(index * 100L)
+                                visible = true
+                            }
                         }
-                    }
-                    
-                    AnimatedVisibility(
-                        visible = visible,
-                        enter = fadeIn(tween(500)) + slideInHorizontally { it / 3 }
-                    ) {
-                        SmartBenefitItem(
-                            benefit = benefit,
-                            accentColor = page.accentColor
-                        )
+                        
+                        AnimatedVisibility(
+                            visible = visible,
+                            enter = fadeIn(tween(500)) + slideInHorizontally { it / 3 }
+                        ) {
+                            SmartBenefitItem(
+                                benefit = benefit,
+                                accentColor = page.accentColor
+                            )
+                        }
                     }
                 }
             }
         }
+        
+        // Add bottom spacing to ensure no overlap with navigation
+        Spacer(modifier = Modifier.height(140.dp))
     }
 }
 
