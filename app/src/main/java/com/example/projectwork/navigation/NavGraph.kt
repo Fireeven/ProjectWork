@@ -16,6 +16,7 @@ import com.example.projectwork.screens.BudgetScreen
 import com.example.projectwork.screens.HomeScreen
 import com.example.projectwork.screens.LoadingScreen
 import com.example.projectwork.screens.OnboardingScreen
+import com.example.projectwork.screens.SettingsScreen
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
@@ -143,7 +144,9 @@ fun AppNavigation(navController: NavHostController) {
         }
 
         composable(Screen.Settings.route) {
-            // SettingsScreen()
+            SettingsScreen(
+                navController = navController
+            )
         }
     }
 } 

@@ -263,7 +263,7 @@ fun HomeScreen(
                             ActionButton(
                                 title = "Settings",
                                 icon = Icons.Default.Settings,
-                                onClick = { /* TODO: Navigate to settings */ },
+                                onClick = { navController.navigate(Screen.Settings.route) },
                                 modifier = Modifier.weight(1f)
                             )
                         }
