@@ -6,145 +6,130 @@
         <shape android:shape="rectangle">
             <gradient
                 android:type="linear"
-                android:angle="135"
+                android:angle="45"
                 android:startColor="#667eea"
                 android:centerColor="#764ba2"
                 android:endColor="#f093fb" />
         </shape>
     </item>
     
-    <!-- Animated circles background pattern -->
+    <!-- Floating particles effect -->
     <item>
-        <shape android:shape="oval">
-            <gradient
-                android:type="radial"
-                android:gradientRadius="400dp"
-                android:centerX="0.2"
-                android:centerY="0.3"
-                android:startColor="#40FFFFFF"
-                android:endColor="#00FFFFFF" />
-        </shape>
-    </item>
-    
-    <item>
-        <shape android:shape="oval">
-            <gradient
-                android:type="radial"
-                android:gradientRadius="300dp"
-                android:centerX="0.8"
-                android:centerY="0.7"
-                android:startColor="#30FFFFFF"
-                android:endColor="#00FFFFFF" />
-        </shape>
-    </item>
-    
-    <!-- Central design element -->
-    <item android:gravity="center">
         <vector
-            android:width="200dp"
-            android:height="200dp"
-            android:viewportWidth="200"
-            android:viewportHeight="200">
+            android:width="400dp"
+            android:height="800dp"
+            android:viewportWidth="400"
+            android:viewportHeight="800">
             
-            <!-- Outer ring -->
+            <!-- Floating circles of different sizes -->
             <path
-                android:pathData="M 100 30 m -25 0 a 25 25 0 0 1 50 0 a 25 25 0 0 1 -50 0"
-                android:strokeWidth="3"
-                android:strokeColor="#FFFFFF"
-                android:fillColor="#00FFFFFF" />
+                android:pathData="M 50 100 m -8 0 a 8 8 0 0 1 16 0 a 8 8 0 0 1 -16 0"
+                android:fillColor="#40FFFFFF" />
+            <path
+                android:pathData="M 350 150 m -6 0 a 6 6 0 0 1 12 0 a 6 6 0 0 1 -12 0"
+                android:fillColor="#60FFFFFF" />
+            <path
+                android:pathData="M 80 250 m -4 0 a 4 4 0 0 1 8 0 a 4 4 0 0 1 -8 0"
+                android:fillColor="#50FFFFFF" />
+            <path
+                android:pathData="M 320 300 m -10 0 a 10 10 0 0 1 20 0 a 10 10 0 0 1 -20 0"
+                android:fillColor="#30FFFFFF" />
+            <path
+                android:pathData="M 150 180 m -5 0 a 5 5 0 0 1 10 0 a 5 5 0 0 1 -10 0"
+                android:fillColor="#70FFFFFF" />
+            <path
+                android:pathData="M 280 220 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
+                android:fillColor="#80FFFFFF" />
             
-            <!-- Inner geometric shapes -->
+            <!-- More particles -->
             <path
-                android:pathData="M 80 80 L 120 80 L 120 120 L 80 120 Z"
-                android:fillColor="#4ADE80"
-                android:strokeWidth="2"
-                android:strokeColor="#FFFFFF" />
+                android:pathData="M 120 350 m -7 0 a 7 7 0 0 1 14 0 a 7 7 0 0 1 -14 0"
+                android:fillColor="#45FFFFFF" />
+            <path
+                android:pathData="M 30 400 m -4 0 a 4 4 0 0 1 8 0 a 4 4 0 0 1 -8 0"
+                android:fillColor="#60FFFFFF" />
+            <path
+                android:pathData="M 370 450 m -9 0 a 9 9 0 0 1 18 0 a 9 9 0 0 1 -18 0"
+                android:fillColor="#35FFFFFF" />
+            <path
+                android:pathData="M 200 480 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
+                android:fillColor="#75FFFFFF" />
             
-            <!-- Shopping cart simplified icon -->
+            <!-- Bottom particles -->
             <path
-                android:pathData="M 85 90 L 90 90 L 92 95 L 108 95 L 110 90 L 115 90"
-                android:strokeWidth="4"
-                android:strokeColor="#FFFFFF"
-                android:strokeLineCap="round" />
-            
+                android:pathData="M 90 600 m -6 0 a 6 6 0 0 1 12 0 a 6 6 0 0 1 -12 0"
+                android:fillColor="#50FFFFFF" />
             <path
-                android:pathData="M 92 95 L 92 100 L 108 100 L 108 95"
-                android:strokeWidth="4"
-                android:strokeColor="#FFFFFF"
-                android:strokeLineCap="round" />
-            
-            <!-- Cart wheels -->
+                android:pathData="M 310 650 m -4 0 a 4 4 0 0 1 8 0 a 4 4 0 0 1 -8 0"
+                android:fillColor="#65FFFFFF" />
             <path
-                android:pathData="M 95 105 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
-                android:fillColor="#FFFFFF" />
-            <path
-                android:pathData="M 105 105 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
-                android:fillColor="#FFFFFF" />
-            
-            <!-- Floating dots for smart effect -->
-            <path
-                android:pathData="M 70 60 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
-                android:fillColor="#06B6D4" />
-            <path
-                android:pathData="M 130 60 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
-                android:fillColor="#06B6D4" />
-            <path
-                android:pathData="M 70 140 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
-                android:fillColor="#8B5CF6" />
-            <path
-                android:pathData="M 130 140 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
-                android:fillColor="#8B5CF6" />
-            
-            <!-- Connection lines -->
-            <path
-                android:pathData="M 70 60 L 85 80"
-                android:strokeWidth="1.5"
-                android:strokeColor="#06B6D4"
-                android:strokeLineCap="round" />
-            <path
-                android:pathData="M 130 60 L 115 80"
-                android:strokeWidth="1.5"
-                android:strokeColor="#06B6D4"
-                android:strokeLineCap="round" />
+                android:pathData="M 160 700 m -8 0 a 8 8 0 0 1 16 0 a 8 8 0 0 1 -16 0"
+                android:fillColor="#40FFFFFF" />
             
         </vector>
     </item>
     
-    <!-- App name text background -->
-    <item android:gravity="center|bottom" android:bottom="150dp">
+    <!-- Central modern logo/brand mark -->
+    <item android:gravity="center">
         <vector
-            android:width="300dp"
-            android:height="80dp"
-            android:viewportWidth="300"
-            android:viewportHeight="80">
+            android:width="120dp"
+            android:height="120dp"
+            android:viewportWidth="120"
+            android:viewportHeight="120">
             
-            <!-- Smart Cart text replacement with shapes -->
+            <!-- Modern "S" shape -->
             <path
-                android:pathData="M 50 20 L 80 20 L 80 25 L 50 25 Z"
+                android:pathData="M 30 25 Q 45 15, 60 25 Q 75 35, 90 25 Q 75 45, 60 55 Q 45 65, 30 55 Q 45 75, 60 85 Q 75 95, 90 85"
+                android:strokeWidth="6"
+                android:strokeColor="#FFFFFF"
+                android:strokeLineCap="round"
+                android:fillColor="#00FFFFFF" />
+            
+            <!-- Modern "C" shape -->
+            <path
+                android:pathData="M 85 40 Q 95 30, 105 40 Q 110 50, 105 60 Q 95 70, 85 60"
+                android:strokeWidth="5"
+                android:strokeColor="#FFFFFF"
+                android:strokeLineCap="round"
+                android:fillColor="#00FFFFFF" />
+            
+            <!-- Accent dots -->
+            <path
+                android:pathData="M 25 30 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
+                android:fillColor="#4ADE80" />
+            <path
+                android:pathData="M 95 85 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
+                android:fillColor="#06B6D4" />
+            
+        </vector>
+    </item>
+    
+    <!-- App name in modern typography style -->
+    <item android:gravity="center|bottom" android:bottom="120dp">
+        <vector
+            android:width="200dp"
+            android:height="50dp"
+            android:viewportWidth="200"
+            android:viewportHeight="50">
+            
+            <!-- Modern text blocks representing "SMART CART" -->
+            <path
+                android:pathData="M 20 15 L 45 15 L 45 20 L 20 20 Z"
                 android:fillColor="#FFFFFF" />
             <path
-                android:pathData="M 50 30 L 75 30 L 75 35 L 50 35 Z"
-                android:fillColor="#FFFFFF" />
-            <path
-                android:pathData="M 50 40 L 85 40 L 85 45 L 50 45 Z"
+                android:pathData="M 50 15 L 80 15 L 80 20 L 50 20 Z"
                 android:fillColor="#FFFFFF" />
             
             <path
-                android:pathData="M 120 20 L 150 20 L 150 25 L 120 25 Z"
+                android:pathData="M 120 15 L 145 15 L 145 20 L 120 20 Z"
                 android:fillColor="#FFFFFF" />
             <path
-                android:pathData="M 120 30 L 145 30 L 145 35 L 120 35 Z"
-                android:fillColor="#FFFFFF" />
-            <path
-                android:pathData="M 120 40 L 155 40 L 155 45 L 120 45 Z"
+                android:pathData="M 150 15 L 180 15 L 180 20 L 150 20 Z"
                 android:fillColor="#FFFFFF" />
             
-            <!-- Subtitle bars -->
+            <!-- Subtitle line -->
             <path
-                android:pathData="M 80 60 L 140 60 L 140 63 L 80 63 Z"
-                android:fillColor="#B3FFFFFF" />
-            <path
-                android:pathData="M 90 67 L 130 67 L 130 70 L 90 70 Z"
+                android:pathData="M 60 35 L 140 35 L 140 37 L 60 37 Z"
                 android:fillColor="#B3FFFFFF" />
             
         </vector>
