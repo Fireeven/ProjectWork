@@ -4,96 +4,66 @@
     android:viewportWidth="108"
     android:viewportHeight="108"
     android:tint="#FFFFFF">
-  <group android:scaleX="0.8"
-      android:scaleY="0.8"
+  <group android:scaleX="0.7"
+      android:scaleY="0.7"
       android:pivotX="54"
       android:pivotY="54">
     
-    <!-- Brain outline -->
+    <!-- Modern geometric central element -->
     <path
-        android:pathData="M54,30 
-                       C46,30 39,37 39,45
-                       C39,47 39.5,49 40,51
-                       C38,53 37,56 37,59
-                       C37,65 41,70 46,72
-                       C48,73 50,73 52,73
-                       L56,73
-                       C58,73 60,73 62,72
-                       C67,70 71,65 71,59
-                       C71,56 70,53 68,51
-                       C68.5,49 69,47 69,45
-                       C69,37 62,30 54,30 Z"
+        android:pathData="M54,25 
+                       C62,25 69,32 69,40
+                       C69,48 62,55 54,55
+                       C46,55 39,48 39,40
+                       C39,32 46,25 54,25 Z"
         android:fillColor="#4ADE80" />
     
-    <!-- Brain center line -->
+    <!-- Inner design elements -->
     <path
-        android:pathData="M54,35 L54,65"
+        android:pathData="M46,40 L62,40 L62,56 L46,56 Z"
+        android:fillColor="#FFFFFF" />
+    
+    <!-- Abstract "S" curve -->
+    <path
+        android:pathData="M49,44 Q52,42 55,44 Q58,46 61,44 Q58,50 55,52 Q52,54 49,52"
         android:strokeWidth="2"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round" />
+        android:strokeColor="#667eea"
+        android:strokeLineCap="round"
+        android:fillColor="#00FFFFFF" />
     
-    <!-- Brain left hemisphere -->
+    <!-- Floating accent dots -->
     <path
-        android:pathData="M46,45 C44,45 42,47 42,49 C42,51 44,53 46,53"
-        android:strokeWidth="1.5"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round" />
-    
-    <!-- Brain right hemisphere -->
-    <path
-        android:pathData="M62,45 C64,45 66,47 66,49 C66,51 64,53 62,53"
-        android:strokeWidth="1.5"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round" />
-    
-    <!-- Connection nodes -->
-    <path
-        android:pathData="M 46 55 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+        android:pathData="M 42 35 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
         android:fillColor="#06B6D4" />
     <path
-        android:pathData="M 62 55 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+        android:pathData="M 66 35 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
         android:fillColor="#06B6D4" />
+    <path
+        android:pathData="M 42 61 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+        android:fillColor="#8B5CF6" />
+    <path
+        android:pathData="M 66 61 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+        android:fillColor="#8B5CF6" />
     
-    <!-- Shopping cart handle -->
+    <!-- Connection lines -->
     <path
-        android:pathData="M35,75 L40,75"
-        android:strokeWidth="3"
-        android:strokeColor="#3B82F6"
-        android:strokeLineCap="round" />
-    
-    <!-- Shopping cart body -->
-    <path
-        android:pathData="M40,75 L42,80 L66,80 L68,75"
-        android:strokeWidth="3"
-        android:strokeColor="#3B82F6"
-        android:strokeLineCap="round" />
-    
-    <!-- Cart bottom -->
-    <path
-        android:pathData="M42,80 L42,85 L66,85 L66,80"
-        android:strokeWidth="3"
-        android:strokeColor="#3B82F6"
-        android:strokeLineCap="round" />
-    
-    <!-- Cart wheels -->
-    <path
-        android:pathData="M 47 88 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
-        android:fillColor="#3B82F6" />
-    <path
-        android:pathData="M 61 88 m -3 0 a 3 3 0 0 1 6 0 a 3 3 0 0 1 -6 0"
-        android:fillColor="#3B82F6" />
-    
-    <!-- Connection lines from brain to cart -->
-    <path
-        android:pathData="M46,65 L48,75"
-        android:strokeWidth="2"
+        android:pathData="M42,37 L46,42"
+        android:strokeWidth="1.5"
         android:strokeColor="#06B6D4"
         android:strokeLineCap="round" />
     <path
-        android:pathData="M62,65 L60,75"
-        android:strokeWidth="2"
+        android:pathData="M66,37 L62,42"
+        android:strokeWidth="1.5"
         android:strokeColor="#06B6D4"
         android:strokeLineCap="round" />
-        
+    
+    <!-- Bottom geometric elements -->
+    <path
+        android:pathData="M48,65 L60,65 L60,68 L48,68 Z"
+        android:fillColor="#667eea" />
+    <path
+        android:pathData="M50,70 L58,70 L58,72 L50,72 Z"
+        android:fillColor="#8B5CF6" />
+    
   </group>
 </vector>
