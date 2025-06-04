@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Gradient Background -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="linear"
+                android:angle="135"
+                android:startColor="#4ADE80"
+                android:centerColor="#06B6D4"
+                android:endColor="#3B82F6" />
+        </shape>
+    </item>
+    
+    <!-- Subtle overlay pattern -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="800dp"
+                android:centerX="0.3"
+                android:centerY="0.2"
+                android:startColor="#FFFFFF"
+                android:endColor="#00FFFFFF"
+                android:centerColor="#33FFFFFF" />
+        </shape>
+    </item>
+    
+    <!-- Smart Cart Logo -->
+    <item
+        android:gravity="center"
+        android:width="120dp"
+        android:height="120dp">
+        <shape android:shape="oval">
+            <solid android:color="#FFFFFF" />
+            <size
+                android:width="120dp"
+                android:height="120dp" />
+        </shape>
+    </item>
+    
+    <!-- Logo content overlay -->
+    <item
+        android:gravity="center"
+        android:width="100dp"
+        android:height="100dp">
+        <vector
+            android:width="100dp"
+            android:height="100dp"
+            android:viewportWidth="100"
+            android:viewportHeight="100">
+            
+            <!-- Brain outline -->
+            <path
+                android:pathData="M50,25 
+                           C42,25 35,32 35,40
+                           C35,42 35.5,44 36,46
+                           C34,48 33,51 33,54
+                           C33,60 37,65 42,67
+                           C44,68 46,68 48,68
+                           L52,68
+                           C54,68 56,68 58,67
+                           C63,65 67,60 67,54
+                           C67,51 66,48 64,46
+                           C64.5,44 65,42 65,40
+                           C65,32 58,25 50,25 Z"
+                android:fillColor="#4ADE80"
+                android:strokeWidth="2"
+                android:strokeColor="#FFFFFF" />
+            
+            <!-- Brain center line -->
+            <path
+                android:pathData="M50,30 L50,60"
+                android:strokeWidth="2"
+                android:strokeColor="#FFFFFF"
+                android:strokeLineCap="round" />
+            
+            <!-- Connection nodes -->
+            <path
+                android:pathData="M 42 50 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+                android:fillColor="#06B6D4" />
+            <path
+                android:pathData="M 58 50 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+                android:fillColor="#06B6D4" />
+            
+            <!-- Shopping cart -->
+            <path
+                android:pathData="M35,70
+                           L40,70
+                           L42,75
+                           L58,75
+                           L60,70
+                           L65,70"
+                android:strokeWidth="3"
+                android:strokeColor="#3B82F6"
+                android:strokeLineCap="round" />
+            
+            <!-- Cart body -->
+            <path
+                android:pathData="M42,75
+                           L42,80
+                           L58,80
+                           L58,75"
+                android:strokeWidth="3"
+                android:strokeColor="#3B82F6"
+                android:strokeLineCap="round" />
+            
+            <!-- Cart wheels -->
+            <path
+                android:pathData="M 45 83 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+                android:fillColor="#3B82F6" />
+            <path
+                android:pathData="M 55 83 m -2 0 a 2 2 0 0 1 4 0 a 2 2 0 0 1 -4 0"
+                android:fillColor="#3B82F6" />
+            
+            <!-- Connection lines from brain to cart -->
+            <path
+                android:pathData="M42,60 L44,70"
+                android:strokeWidth="1.5"
+                android:strokeColor="#06B6D4"
+                android:strokeLineCap="round" />
+            <path
+                android:pathData="M58,60 L56,70"
+                android:strokeWidth="1.5"
+                android:strokeColor="#06B6D4"
+                android:strokeLineCap="round" />
+        </vector>
+    </item>
+</layer-list> 
