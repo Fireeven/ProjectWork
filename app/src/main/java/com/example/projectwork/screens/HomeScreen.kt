@@ -194,7 +194,8 @@ fun HomeScreen(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(
                         modifier = Modifier.padding(20.dp)
@@ -220,9 +221,9 @@ fun HomeScreen(
                                 modifier = Modifier.weight(1f)
                             )
                             ActionButton(
-                                title = "View Analytics",
-                                icon = Icons.Default.Analytics,
-                                onClick = { navController.navigate(Screen.Analytics.route) },
+                                title = "Budget",
+                                icon = Icons.Default.AccountBalance,
+                                onClick = { navController.navigate(Screen.Budget.route) },
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -234,15 +235,35 @@ fun HomeScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             ActionButton(
-                                title = "Find Recipes",
+                                title = "Analytics",
+                                icon = Icons.Default.Analytics,
+                                onClick = { navController.navigate(Screen.Analytics.route) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            ActionButton(
+                                title = "Recipes",
                                 icon = Icons.Default.MenuBook,
                                 onClick = { navController.navigate(Screen.Recipe.route) },
                                 modifier = Modifier.weight(1f)
                             )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             ActionButton(
                                 title = "AI Assistant",
                                 icon = Icons.Default.Assistant,
                                 onClick = { showChatDialog = true },
+                                modifier = Modifier.weight(1f)
+                            )
+                            ActionButton(
+                                title = "Settings",
+                                icon = Icons.Default.Settings,
+                                onClick = { /* TODO: Navigate to settings */ },
                                 modifier = Modifier.weight(1f)
                             )
                         }

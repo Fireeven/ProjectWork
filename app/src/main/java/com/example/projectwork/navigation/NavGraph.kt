@@ -12,6 +12,7 @@ import com.example.projectwork.screens.GroceryListScreen
 import com.example.projectwork.screens.EditGroceryListScreen
 import com.example.projectwork.screens.RecipeScreen
 import com.example.projectwork.screens.AnalyticsScreen
+import com.example.projectwork.screens.BudgetScreen
 import com.example.projectwork.screens.HomeScreen
 import com.example.projectwork.screens.LoadingScreen
 import com.example.projectwork.screens.OnboardingScreen
@@ -127,6 +128,12 @@ fun AppNavigation(navController: NavHostController) {
 
         composable(Screen.Analytics.route) {
             AnalyticsScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Budget.route) {
+            BudgetScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }
