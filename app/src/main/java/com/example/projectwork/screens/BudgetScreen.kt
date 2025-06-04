@@ -78,55 +78,68 @@ fun BudgetScreen(
     // Currency formatter
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
     
-    // Sample budget categories
-    val budgetCategories = remember {
-        listOf(
-            BudgetCategory(
-                id = "groceries",
-                name = "Groceries",
-                icon = Icons.Default.ShoppingCart,
-                color = Color(0xFF4ADE80),
-                budgetAmount = 800.0,
-                spentAmount = totalSpent,
-                description = "Food and household items"
-            ),
-            BudgetCategory(
-                id = "dining",
-                name = "Dining Out",
-                icon = Icons.Default.Restaurant,
-                color = Color(0xFF06B6D4),
-                budgetAmount = 300.0,
-                spentAmount = 145.50,
-                description = "Restaurants and takeout"
-            ),
-            BudgetCategory(
-                id = "transport",
-                name = "Transportation",
-                icon = Icons.Default.DirectionsCar,
-                color = Color(0xFF8B5CF6),
-                budgetAmount = 400.0,
-                spentAmount = 320.75,
-                description = "Gas, public transport, parking"
-            ),
-            BudgetCategory(
-                id = "entertainment",
-                name = "Entertainment",
-                icon = Icons.Default.MovieFilter,
-                color = Color(0xFFF59E0B),
-                budgetAmount = 200.0,
-                spentAmount = 89.25,
-                description = "Movies, games, subscriptions"
-            ),
-            BudgetCategory(
-                id = "utilities",
-                name = "Utilities",
-                icon = Icons.Default.ElectricBolt,
-                color = Color(0xFFEF4444),
-                budgetAmount = 350.0,
-                spentAmount = 287.90,
-                description = "Electricity, water, internet"
+    // Make budget categories mutable state
+    var budgetCategories by remember {
+        mutableStateOf(
+            listOf(
+                BudgetCategory(
+                    id = "groceries",
+                    name = "Groceries",
+                    icon = Icons.Default.ShoppingCart,
+                    color = Color(0xFF4ADE80),
+                    budgetAmount = 800.0,
+                    spentAmount = totalSpent,
+                    description = "Food and household items"
+                ),
+                BudgetCategory(
+                    id = "dining",
+                    name = "Dining Out",
+                    icon = Icons.Default.Restaurant,
+                    color = Color(0xFF06B6D4),
+                    budgetAmount = 300.0,
+                    spentAmount = 145.50,
+                    description = "Restaurants and takeout"
+                ),
+                BudgetCategory(
+                    id = "transport",
+                    name = "Transportation",
+                    icon = Icons.Default.DirectionsCar,
+                    color = Color(0xFF8B5CF6),
+                    budgetAmount = 400.0,
+                    spentAmount = 320.75,
+                    description = "Gas, public transport, parking"
+                ),
+                BudgetCategory(
+                    id = "entertainment",
+                    name = "Entertainment",
+                    icon = Icons.Default.MovieFilter,
+                    color = Color(0xFFF59E0B),
+                    budgetAmount = 200.0,
+                    spentAmount = 89.25,
+                    description = "Movies, games, subscriptions"
+                ),
+                BudgetCategory(
+                    id = "utilities",
+                    name = "Utilities",
+                    icon = Icons.Default.ElectricBolt,
+                    color = Color(0xFFEF4444),
+                    budgetAmount = 350.0,
+                    spentAmount = 287.90,
+                    description = "Electricity, water, internet"
+                )
             )
         )
+    }
+    
+    // Update groceries category spending when totalSpent changes
+    LaunchedEffect(totalSpent) {
+        budgetCategories = budgetCategories.map { category ->
+            if (category.id == "groceries") {
+                category.copy(spentAmount = totalSpent)
+            } else {
+                category
+            }
+        }
     }
     
     val totalBudgetAmount = budgetCategories.sumOf { it.budgetAmount }
@@ -216,7 +229,10 @@ fun BudgetScreen(
                             totalSpent = totalSpentAmount,
                             totalBudget = totalBudgetAmount,
                             currencyFormatter = currencyFormatter,
-                            onEditGoal = { showEditDialog = true }
+                            onEditGoal = { 
+                                selectedCategory = null
+                                showEditDialog = true 
+                            }
                         )
                     }
                 }
@@ -305,23 +321,45 @@ fun BudgetScreen(
         AddBudgetDialog(
             onDismiss = { showAddBudgetDialog = false },
             onConfirm = { name, amount ->
-                // Handle adding new budget category
+                // Add new budget category
+                val newCategory = BudgetCategory(
+                    id = name.lowercase().replace(" ", "_"),
+                    name = name,
+                    icon = Icons.Default.Category,
+                    color = Color(0xFF9333EA),
+                    budgetAmount = amount,
+                    spentAmount = 0.0,
+                    description = "Custom category"
+                )
+                budgetCategories = budgetCategories + newCategory
                 showAddBudgetDialog = false
             }
         )
     }
     
-    // Edit Goal Dialog
+    // Edit Goal/Category Dialog
     if (showEditDialog) {
         EditBudgetDialog(
             category = selectedCategory,
-            currentGoal = monthlyGoal,
+            currentGoal = if (selectedCategory != null) selectedCategory!!.budgetAmount.toString() else monthlyGoal,
             onDismiss = { 
                 showEditDialog = false
                 selectedCategory = null
             },
-            onConfirm = { newGoal ->
-                monthlyGoal = newGoal
+            onConfirm = { newAmount ->
+                if (selectedCategory != null) {
+                    // Update specific category budget
+                    budgetCategories = budgetCategories.map { category ->
+                        if (category.id == selectedCategory!!.id) {
+                            category.copy(budgetAmount = newAmount.toDoubleOrNull() ?: category.budgetAmount)
+                        } else {
+                            category
+                        }
+                    }
+                } else {
+                    // Update monthly goal
+                    monthlyGoal = newAmount
+                }
                 showEditDialog = false
                 selectedCategory = null
             }
@@ -675,21 +713,67 @@ private fun EditBudgetDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = if (category != null) "Edit ${category.name}" else "Edit Monthly Goal",
+                text = if (category != null) "Edit ${category.name} Budget" else "Edit Monthly Goal",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
         },
         text = {
-            OutlinedTextField(
-                value = goalAmount,
-                onValueChange = { goalAmount = it },
-                label = { Text(if (category != null) "Budget Amount" else "Monthly Goal") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                prefix = { Text("$") },
-                singleLine = true
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                if (category != null) {
+                    // Show category info
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(category.color.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = category.icon,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = category.color
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = category.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = category.description,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    
+                    HorizontalDivider()
+                }
+                
+                OutlinedTextField(
+                    value = goalAmount,
+                    onValueChange = { goalAmount = it },
+                    label = { Text(if (category != null) "Budget Amount" else "Monthly Goal") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    prefix = { Text("$") },
+                    singleLine = true,
+                    supportingText = {
+                        if (category != null) {
+                            Text("Current spending: $${String.format("%.2f", category.spentAmount)}")
+                        } else {
+                            Text("Set your overall monthly spending target")
+                        }
+                    }
+                )
+            }
         },
         confirmButton = {
             Button(
@@ -698,7 +782,7 @@ private fun EditBudgetDialog(
                         onConfirm(goalAmount)
                     }
                 },
-                enabled = goalAmount.toDoubleOrNull() != null
+                enabled = goalAmount.toDoubleOrNull() != null && goalAmount.toDoubleOrNull()!! > 0
             ) {
                 Text("Save")
             }
